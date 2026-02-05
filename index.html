@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VR First Aid Training - Minor Rear-End Collision</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #fff;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+    }
+
+    #app canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Loading / Start Screen Overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: linear-gradient(135deg, #0a0f1e 0%, #1a1a2e 50%, #16213e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    #loading-overlay .logo {
+      font-size: 1.2rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #556;
+      margin-bottom: 2rem;
+    }
+
+    #loading-overlay h1 {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, #ff4444, #ff8800);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    #loading-overlay .subtitle {
+      font-size: clamp(0.9rem, 2vw, 1.2rem);
+      color: #889;
+      margin-bottom: 2.5rem;
+      max-width: 500px;
+    }
+
+    #loading-overlay .scenario-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      max-width: 480px;
+      text-align: left;
+    }
+
+    #loading-overlay .scenario-box h3 {
+      color: #ff8800;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.8rem;
+    }
+
+    #loading-overlay .scenario-box p {
+      color: #aab;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    #loading-overlay .scenario-box .tag {
+      display: inline-block;
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+
+    #loading-overlay .scenario-box .tag.orange {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
+
+    #loading-overlay .controls-info {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    #loading-overlay .control-col {
+      text-align: left;
+    }
+
+    #loading-overlay .control-col h4 {
+      color: #00aaff;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    #loading-overlay .control-col ul {
+      list-style: none;
+      font-size: 0.8rem;
+      color: #889;
+    }
+
+    #loading-overlay .control-col ul li {
+      margin-bottom: 0.3rem;
+    }
+
+    #loading-overlay .control-col ul li kbd {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      padding: 0.1em 0.4em;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #ccc;
+      margin-right: 0.3rem;
+    }
+
+    #start-button {
+      background: linear-gradient(135deg, #2196f3, #00aaff);
+      border: none;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 0.9rem 3rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.05em;
+    }
+
+    #start-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+    }
+
+    #start-button:active {
+      transform: translateY(0);
+    }
+
+    .vr-note {
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: #556;
+    }
+
+    /* VRButton override styles */
+    #VRButton {
+      position: fixed !important;
+      bottom: 20px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+
+    /* Desktop instructions overlay (hidden in VR) */
+    #desktop-controls-hint {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: #889;
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #desktop-controls-hint kbd {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      padding: 0.05em 0.35em;
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: #bbb;
+    }
+  </style>
+
+  <!-- Polyfill for CanvasRenderingContext2D.roundRect -->
+  <script>
+  if (typeof CanvasRenderingContext2D !== 'undefined' &&
+      !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+      const r = typeof radii === 'number' ? radii : (Array.isArray(radii) ? radii[0] : 0);
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y, x + w, y + h, r);
+      this.arcTo(x + w, y + h, x, y + h, r);
+      this.arcTo(x, y + h, x, y, r);
+      this.arcTo(x, y, x + w, y, r);
+      this.closePath();
+    };
+  }
+  </script>
+
+  <!-- ES Module Shims for older browsers -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Loading / Start Screen -->
+  <div id="loading-overlay">
+    <div class="logo">WebXR Training Simulation</div>
+    <h1>VR First Aid Training</h1>
+    <p class="subtitle">Learn the Chain of Rescue in an immersive virtual environment</p>
+
+    <div class="scenario-box">
+      <h3>Scenario Briefing</h3>
+      <p>
+        <span class="tag">Easy Level</span>
+        <span class="tag orange">Single Player</span>
+      </p>
+      <p style="margin-top: 0.8rem;">
+        A <strong>minor rear-end collision</strong> has occurred on an urban road in broad daylight.
+        One person appears dazed but conscious. Your task is to follow the
+        <strong>Chain of Rescue</strong>: secure the scene, call 112, and approach the victim safely.
+      </p>
+    </div>
+
+    <div class="controls-info">
+      <div class="control-col">
+        <h4>Desktop Controls</h4>
+        <ul>
+          <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</li>
+          <li><kbd>Right-drag</kbd> Look around</li>
+          <li><kbd>Left-click</kbd> Interact / Move</li>
+        </ul>
+      </div>
+      <div class="control-col">
+        <h4>VR Controls</h4>
+        <ul>
+          <li><kbd>Trigger</kbd> Select / Teleport</li>
+          <li><kbd>Grip</kbd> Grab objects</li>
+          <li><kbd>Joystick</kbd> Look direction</li>
+        </ul>
+      </div>
+    </div>
+
+    <button id="start-button">Begin Training</button>
+    <p class="vr-note">VR headset detected? Click "Enter VR" after starting.</p>
+  </div>
+
+  <!-- Desktop controls hint (visible during gameplay) -->
+  <div id="desktop-controls-hint">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp;
+    <kbd>Right-drag</kbd> Look &nbsp;|&nbsp;
+    <kbd>Click</kbd> Interact
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
