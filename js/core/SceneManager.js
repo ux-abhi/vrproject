@@ -7,7 +7,7 @@ export class SceneManager {
 
     // Scene
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x87ceeb, 0.003);
+    this.scene.fog = new THREE.FogExp2(0xcfdde9, 0.0075);
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(
@@ -30,7 +30,7 @@ export class SceneManager {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.2;
+    this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.xr.enabled = true;
 
@@ -51,13 +51,13 @@ export class SceneManager {
   }
 
   _setupLighting() {
-    // Hemisphere light (sky blue / ground green)
-    const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x556b2f, 0.6);
+    // Hemisphere light (sky blue / warm ground bounce)
+    const hemiLight = new THREE.HemisphereLight(0xcfe3f5, 0x6b6150, 0.55);
     hemiLight.position.set(0, 50, 0);
     this.scene.add(hemiLight);
 
-    // Directional light (sun)
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    // Directional light (sun), matching the sun disc in the sky shader
+    const dirLight = new THREE.DirectionalLight(0xfff1dc, 2.4);
     dirLight.position.set(30, 50, 30);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
@@ -68,11 +68,19 @@ export class SceneManager {
     dirLight.shadow.camera.right = 50;
     dirLight.shadow.camera.top = 50;
     dirLight.shadow.camera.bottom = -50;
+    dirLight.shadow.bias = -0.0004;
+    dirLight.shadow.normalBias = 0.03;
     this.scene.add(dirLight);
+  }
 
-    // Ambient fill
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-    this.scene.add(ambientLight);
+  // Image-based lighting from the sky so paint, glass and chrome reflect it
+  bakeEnvironment(skyMesh) {
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const envScene = new THREE.Scene();
+    envScene.add(skyMesh.clone());
+    this.scene.environment = pmrem.fromScene(envScene, 0, 0.1, 1000).texture;
+    this.scene.environmentIntensity = 0.7;
+    pmrem.dispose();
   }
 
   _onResize() {

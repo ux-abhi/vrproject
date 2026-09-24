@@ -32,7 +32,7 @@ export class Locomotion {
     // Ring
     const ringGeo = new THREE.RingGeometry(0.3, 0.4, 32);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x00aaff,
+      color: 0x0a84ff,
       transparent: true,
       opacity: 0.6,
       side: THREE.DoubleSide,
@@ -45,7 +45,7 @@ export class Locomotion {
     // Inner circle
     const innerGeo = new THREE.CircleGeometry(0.25, 32);
     const innerMat = new THREE.MeshBasicMaterial({
-      color: 0x00aaff,
+      color: 0x0a84ff,
       transparent: true,
       opacity: 0.3,
       side: THREE.DoubleSide,
@@ -65,7 +65,7 @@ export class Locomotion {
     }
     const geo = new THREE.BufferGeometry().setFromPoints(points);
     const mat = new THREE.LineBasicMaterial({
-      color: 0x00aaff,
+      color: 0x0a84ff,
       transparent: true,
       opacity: 0.5,
     });

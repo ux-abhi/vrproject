@@ -72,6 +72,7 @@ class FirstAidVRApp {
 
   _buildWorld() {
     this.environment = new Environment(this.sceneManager.scene);
+    this.sceneManager.bakeEnvironment(this.environment.sky);
     this.vehicles = new Vehicles(this.sceneManager.scene);
     this.victim = new Victim(this.sceneManager.scene);
 

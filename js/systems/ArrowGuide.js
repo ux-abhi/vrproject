@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { COLORS, createPillLabel } from '../ui/theme.js';
 
 export class ArrowGuide {
   constructor(scene, cameraRig) {
@@ -19,11 +20,12 @@ export class ArrowGuide {
     const group = new THREE.Group();
 
     // Arrow shaft
-    const shaftGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 8);
+    const shaftGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 20);
     const shaftMat = new THREE.MeshStandardMaterial({
-      color: 0xff0000,
-      emissive: 0xff0000,
-      emissiveIntensity: 0.5,
+      color: 0x0a84ff,
+      emissive: 0x0a84ff,
+      emissiveIntensity: 0.9,
+      roughness: 0.3,
     });
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     shaft.rotation.x = Math.PI / 2;
@@ -31,11 +33,12 @@ export class ArrowGuide {
     group.add(shaft);
 
     // Arrow head (cone)
-    const headGeo = new THREE.ConeGeometry(0.08, 0.2, 8);
+    const headGeo = new THREE.ConeGeometry(0.08, 0.2, 24);
     const headMat = new THREE.MeshStandardMaterial({
-      color: 0xff0000,
-      emissive: 0xff0000,
-      emissiveIntensity: 0.5,
+      color: 0x0a84ff,
+      emissive: 0x0a84ff,
+      emissiveIntensity: 0.9,
+      roughness: 0.3,
     });
     const head = new THREE.Mesh(headGeo, headMat);
     head.rotation.x = -Math.PI / 2;
@@ -45,35 +48,18 @@ export class ArrowGuide {
     // Glow effect (larger transparent sphere)
     const glowGeo = new THREE.SphereGeometry(0.15, 16, 16);
     const glowMat = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
+      color: 0x64d2ff,
       transparent: true,
       opacity: 0.15,
+      depthWrite: false,
     });
     const glow = new THREE.Mesh(glowGeo, glowMat);
     glow.position.z = -0.35;
     group.add(glow);
 
-    // Label background
+    // Label
     const labelGroup = new THREE.Group();
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, 256, 64);
-    ctx.fillStyle = '#ff3333';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Follow the arrow', 128, 32);
-
-    const labelTexture = new THREE.CanvasTexture(canvas);
-    const labelGeo = new THREE.PlaneGeometry(0.5, 0.125);
-    const labelMat = new THREE.MeshBasicMaterial({
-      map: labelTexture,
-      transparent: true,
-    });
-    const label = new THREE.Mesh(labelGeo, labelMat);
+    const label = createPillLabel('Follow the arrow', COLORS.blue, { glyph: 'chevron', heightM: 0.09 });
     label.position.set(0, 0.15, -0.3);
     labelGroup.add(label);
     group.add(labelGroup);

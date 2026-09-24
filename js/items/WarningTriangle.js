@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { COLORS, createPillLabel } from '../ui/theme.js';
 
 export class WarningTriangle {
   constructor(scene, stateManager, audioManager, cameraRig) {
@@ -45,25 +46,22 @@ export class WarningTriangle {
     hole.closePath();
     shape.holes.push(hole);
 
-    const extrudeSettings = { depth: 0.03, bevelEnabled: false };
+    const extrudeSettings = {
+      depth: 0.02, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.006, bevelSegments: 2,
+    };
     const triGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     const triMat = new THREE.MeshStandardMaterial({
-      color: 0xff4400,
+      color: 0xd81e1e,
       emissive: 0x000000,
-      roughness: 0.4,
+      roughness: 0.25,
+      metalness: 0.3,
     });
     const triangle = new THREE.Mesh(triGeo, triMat);
     triangle.castShadow = true;
     group.add(triangle);
     this._mainMat = triMat;
 
-    // Reflective border
-    const borderMat = new THREE.MeshStandardMaterial({
-      color: 0xff6600,
-      emissive: 0xff2200,
-      emissiveIntensity: 0.3,
-      metalness: 0.5,
-    });
+    group.add(this._buildFluorescentCore(0.4, 0.3, 0.15, 0.028));
 
     // Label
     const label = this._createLabel('Warning Triangle');
@@ -73,7 +71,7 @@ export class WarningTriangle {
     // Interaction ring
     const ringGeo = new THREE.RingGeometry(0.35, 0.38, 32);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xff4400,
+      color: 0xff9f0a,
       transparent: true,
       opacity: 0.4,
       side: THREE.DoubleSide,
@@ -103,51 +101,72 @@ export class WarningTriangle {
     hole.closePath();
     shape.holes.push(hole);
 
-    const extrudeSettings = { depth: 0.04, bevelEnabled: false };
+    const extrudeSettings = {
+      depth: 0.03, bevelEnabled: true, bevelThickness: 0.008, bevelSize: 0.008, bevelSegments: 2,
+    };
     const triGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     const triMat = new THREE.MeshStandardMaterial({
-      color: 0xff4400,
-      emissive: 0xff2200,
-      emissiveIntensity: 0.4,
-      roughness: 0.3,
+      color: 0xe02020,
+      emissive: 0xff1a00,
+      emissiveIntensity: 0.35,
+      roughness: 0.25,
+      metalness: 0.3,
     });
+
+    // Raised so the triangle stands on its fold-out base rather than in the road
+    const body = new THREE.Group();
+    body.position.y = 0.26;
+    body.rotation.x = -0.08;
     const triangle = new THREE.Mesh(triGeo, triMat);
     triangle.castShadow = true;
-    group.add(triangle);
+    body.add(triangle);
+    body.add(this._buildFluorescentCore(0.6, 0.45, 0.2, 0.038));
+    group.add(body);
 
-    // Stand legs
-    const legMat = new THREE.MeshStandardMaterial({ color: 0xff4400 });
+    // Fold-out stand: grey base bar with two splayed feet
+    const standMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2e, metalness: 0.6, roughness: 0.4 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.025, 0.05), standMat);
+    base.position.set(0, 0.03, 0.02);
+    base.castShadow = true;
+    group.add(base);
     for (const side of [-1, 1]) {
-      const legGeo = new THREE.BoxGeometry(0.02, 0.3, 0.02);
-      const leg = new THREE.Mesh(legGeo, legMat);
-      leg.position.set(side * 0.25, -0.35, 0.1);
-      leg.rotation.x = 0.3;
-      leg.rotation.z = side * 0.15;
-      group.add(leg);
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.32), standMat);
+      foot.position.set(side * 0.3, 0.012, -0.1);
+      foot.rotation.y = side * 0.35;
+      foot.castShadow = true;
+      group.add(foot);
     }
 
     return group;
   }
 
-  _createLabel(text) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, 256, 64, 8);
-    ctx.fill();
-    ctx.fillStyle = '#ff6600';
-    ctx.font = 'bold 22px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 32);
+  // Fluorescent orange-red inner band, as on EU-approved triangles
+  _buildFluorescentCore(top, halfBase, bottom, z) {
+    const outer = new THREE.Shape();
+    outer.moveTo(0, top * 0.8);
+    outer.lineTo(-halfBase * 0.78, -bottom * 0.55);
+    outer.lineTo(halfBase * 0.78, -bottom * 0.55);
+    outer.closePath();
+    const inner = new THREE.Path();
+    inner.moveTo(0, top * 0.62);
+    inner.lineTo(-halfBase * 0.6, -bottom * 0.25);
+    inner.lineTo(halfBase * 0.6, -bottom * 0.25);
+    inner.closePath();
+    outer.holes.push(inner);
 
-    const texture = new THREE.CanvasTexture(canvas);
-    const geo = new THREE.PlaneGeometry(0.5, 0.125);
-    const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-    return new THREE.Mesh(geo, mat);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff5a1f,
+      emissive: 0xff3300,
+      emissiveIntensity: 0.25,
+      roughness: 0.8,
+    });
+    const core = new THREE.Mesh(new THREE.ShapeGeometry(outer), mat);
+    core.position.z = z;
+    return core;
+  }
+
+  _createLabel(text) {
+    return createPillLabel(text, COLORS.orange, { glyph: 'warning', heightM: 0.1 });
   }
 
   _createPlacementZone() {
@@ -160,7 +179,7 @@ export class WarningTriangle {
       32
     );
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xff4400,
+      color: 0xff9f0a,
       transparent: true,
       opacity: 0.3,
       side: THREE.DoubleSide,
@@ -172,7 +191,7 @@ export class WarningTriangle {
 
     // Cross marker in center
     const crossMat = new THREE.MeshBasicMaterial({
-      color: 0xff4400,
+      color: 0xff9f0a,
       transparent: true,
       opacity: 0.5,
     });
@@ -189,22 +208,9 @@ export class WarningTriangle {
     group.add(cross2);
 
     // Label
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(0, 0, 512, 64);
-    ctx.fillStyle = '#ff6600';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Place warning triangle here (~50m behind collision)', 256, 32);
-
-    const labelTexture = new THREE.CanvasTexture(canvas);
-    const labelGeo = new THREE.PlaneGeometry(3, 0.375);
-    const labelMat = new THREE.MeshBasicMaterial({ map: labelTexture, transparent: true });
-    const label = new THREE.Mesh(labelGeo, labelMat);
+    const label = createPillLabel('Place warning triangle here  ·  ~50 m behind', COLORS.orange, {
+      glyph: 'warning', heightM: 0.34,
+    });
     label.position.y = 1.5;
     label.rotation.y = Math.PI; // Face toward player approach direction
     group.add(label);

@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import {
+  COLORS, font, createUICanvas, uiMaterial, drawGlass, drawIconBadge,
+  drawGlyph, drawPillButton, wrapText, rgba,
+} from './theme.js';
+
+const CW = 800;
+const CH = 500;
+const PX_PER_M = CW / 1.6;
 
 export class FailScreen {
   constructor(scene, cameraRig, stateManager, audioManager) {
@@ -16,36 +24,41 @@ export class FailScreen {
     this.scene.add(this.group);
 
     // Canvas
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = 800;
-    this.canvas.height = 500;
-    this.ctx = this.canvas.getContext('2d');
-
-    this.texture = new THREE.CanvasTexture(this.canvas);
+    const { canvas, ctx, texture } = createUICanvas(CW, CH, 2);
+    this.canvas = canvas;
+    this.ctx = ctx;
+    this.texture = texture;
 
     // Panel
     const geo = new THREE.PlaneGeometry(1.6, 1.0);
-    const mat = new THREE.MeshBasicMaterial({ map: this.texture, transparent: true });
-    this.panel = new THREE.Mesh(geo, mat);
+    this.panel = new THREE.Mesh(geo, uiMaterial(this.texture));
+    this.panel.renderOrder = 51;
     this.group.add(this.panel);
 
-    // Red vignette backing
-    const backGeo = new THREE.PlaneGeometry(1.64, 1.04);
-    const backMat = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      transparent: true,
-      opacity: 0.3,
-    });
-    const back = new THREE.Mesh(backGeo, backMat);
-    back.position.z = -0.01;
+    // Soft red glow behind the panel (pulsed in update)
+    const glow = createUICanvas(256, 160, 1);
+    const g = glow.ctx.createRadialGradient(128, 80, 10, 128, 80, 128);
+    g.addColorStop(0, rgba(COLORS.red, 0.9));
+    g.addColorStop(0.55, rgba(COLORS.red, 0.35));
+    g.addColorStop(1, rgba(COLORS.red, 0));
+    glow.ctx.fillStyle = g;
+    glow.ctx.fillRect(0, 0, 256, 160);
+    const back = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.6, 1.625),
+      uiMaterial(glow.texture, { opacity: 0.4 })
+    );
+    back.position.z = -0.02;
+    back.renderOrder = 49;
     this.group.add(back);
+    this._glow = back;
 
-    // Continue button
+    // Continue button hit area
     const btnGeo = new THREE.PlaneGeometry(0.5, 0.12);
     const btnMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
       opacity: 0,
+      depthWrite: false,
     });
     this.continueButton = new THREE.Mesh(btnGeo, btnMat);
     this.continueButton.position.set(0, -0.35, 0.01);
@@ -102,68 +115,50 @@ export class FailScreen {
 
   _render() {
     const ctx = this.ctx;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
+    const w = CW;
+    const h = CH;
 
     ctx.clearRect(0, 0, w, h);
+    drawGlass(ctx, 10, 10, w - 20, h - 20, 44, {
+      tint: COLORS.red,
+      border: rgba(COLORS.red, 0.6),
+    });
 
-    // Dark red background
-    ctx.fillStyle = 'rgba(40, 0, 0, 0.95)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, w, h, 16);
-    ctx.fill();
+    drawIconBadge(ctx, w / 2, 82, 38, COLORS.red, 'warning');
 
-    // Red border
-    ctx.strokeStyle = '#ff3333';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.roundRect(8, 8, w - 16, h - 16, 12);
-    ctx.stroke();
-
-    // Warning icon
-    ctx.fillStyle = '#ff3333';
-    ctx.font = 'bold 60px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('DANGER', w / 2, 70);
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = COLORS.label;
+    ctx.font = font(36, 700);
+    ctx.fillText('Scene not secured', w / 2, 166);
 
-    // Cause of death message
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '24px Arial';
-    ctx.fillText('You approached the victim without', w / 2, 140);
-    ctx.fillText('securing the accident scene!', w / 2, 170);
+    ctx.fillStyle = COLORS.secondaryLabel;
+    ctx.font = font(20, 500);
+    const body = 'You approached the victim before placing the warning triangle. '
+      + 'Oncoming traffic could cause a secondary collision, endangering you and the victim.';
+    let y = 206;
+    for (const line of wrapText(ctx, body, w - 180)) {
+      ctx.fillText(line, w / 2, y);
+      y += 28;
+    }
 
-    // Explanation
-    ctx.fillStyle = '#ff9999';
-    ctx.font = '20px Arial';
-    ctx.fillText('Without the warning triangle in place,', w / 2, 220);
-    ctx.fillText('oncoming traffic could cause a secondary', w / 2, 248);
-    ctx.fillText('collision, endangering you and the victim.', w / 2, 276);
-
-    // Learning point
-    ctx.fillStyle = '#ff9800';
-    ctx.font = 'bold 20px Arial';
-    ctx.fillText('Always secure the scene FIRST!', w / 2, 330);
-
-    // Continue button
-    const btnW = 200;
-    const btnH = 50;
-    const btnX = (w - btnW) / 2;
-    const btnY = 380;
-
-    ctx.fillStyle = this._hoveredContinue ? '#ff4444' : 'rgba(255, 68, 68, 0.5)';
+    // Learning capsule
+    const tip = 'Always secure the scene first';
+    ctx.font = font(18, 700);
+    const tw = ctx.measureText(tip).width + 70;
+    ctx.fillStyle = rgba(COLORS.orange, 0.18);
     ctx.beginPath();
-    ctx.roundRect(btnX, btnY, btnW, btnH, 8);
+    ctx.roundRect((w - tw) / 2, 312, tw, 44, 22);
     ctx.fill();
+    drawGlyph(ctx, 'warning', (w - tw) / 2 + 26, 334, 20, COLORS.orange);
+    ctx.fillStyle = COLORS.orange;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tip, (w - tw) / 2 + 46, 335);
 
-    ctx.strokeStyle = '#ff4444';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(btnX, btnY, btnW, btnH, 8);
-    ctx.stroke();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 22px Arial';
-    ctx.fillText('Try Again', w / 2, btnY + 32);
+    // Button, aligned with hit area at y = -0.35 m (0.5 x 0.12 m)
+    const btnCy = CH / 2 + 0.35 * PX_PER_M;
+    drawPillButton(ctx, w / 2, btnCy, 0.5 * PX_PER_M, 0.12 * PX_PER_M, 'Try Again', COLORS.red, this._hoveredContinue);
 
     this.texture.needsUpdate = true;
   }
@@ -176,10 +171,7 @@ export class FailScreen {
     this.cameraRig.getWorldPosition(camWorldPos);
     this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
 
-    // Pulsing red border effect
-    const back = this.group.children[1];
-    if (back && back.material) {
-      back.material.opacity = 0.2 + Math.sin(this.timer * 3) * 0.1;
-    }
+    // Pulsing red glow
+    this._glow.material.opacity = 0.35 + Math.sin(this.timer * 3) * 0.2;
   }
 }

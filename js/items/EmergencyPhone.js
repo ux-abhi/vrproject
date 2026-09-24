@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { COLORS, font, createUICanvas, drawIconBadge, createPillLabel } from '../ui/theme.js';
 
 export class EmergencyPhone {
   constructor(scene, stateManager, audioManager) {
@@ -18,51 +20,58 @@ export class EmergencyPhone {
   _build() {
     const group = new THREE.Group();
 
-    // Phone body
-    const phoneGeo = new THREE.BoxGeometry(0.08, 0.16, 0.01);
+    // Phone body (rounded titanium frame)
+    const phoneGeo = new RoundedBoxGeometry(0.078, 0.16, 0.009, 4, 0.012);
     const phoneMat = new THREE.MeshStandardMaterial({
-      color: 0x222222,
-      metalness: 0.8,
-      roughness: 0.2,
+      color: 0x3a3a3c,
+      metalness: 0.9,
+      roughness: 0.25,
     });
     const phone = new THREE.Mesh(phoneGeo, phoneMat);
     phone.castShadow = true;
     group.add(phone);
     this._mainMat = phoneMat;
 
-    // Screen
-    const screenGeo = new THREE.PlaneGeometry(0.065, 0.12);
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#112233';
-    ctx.fillRect(0, 0, 128, 256);
-    ctx.fillStyle = '#00ff44';
-    ctx.font = 'bold 36px monospace';
+    // Screen: iOS-style emergency call UI
+    const { ctx, texture: screenTexture } = createUICanvas(144, 300, 3);
+    const bg = ctx.createLinearGradient(0, 0, 0, 300);
+    bg.addColorStop(0, '#1c1c1e');
+    bg.addColorStop(1, '#000000');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 144, 300, 18);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.roundRect(48, 10, 48, 14, 7); // dynamic island
+    ctx.fill();
+    ctx.fillStyle = COLORS.red;
+    ctx.font = font(11, 700);
     ctx.textAlign = 'center';
-    ctx.fillText('112', 64, 120);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '16px Arial';
-    ctx.fillText('Emergency', 64, 160);
-    ctx.fillText('Call', 64, 180);
+    ctx.fillText('EMERGENCY SOS', 72, 70);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = font(52, 300);
+    ctx.fillText('112', 72, 128);
+    ctx.fillStyle = COLORS.secondaryLabel;
+    ctx.font = font(11, 500);
+    ctx.fillText('Tap to call', 72, 150);
+    drawIconBadge(ctx, 72, 232, 26, COLORS.green, 'phone');
 
-    const screenTexture = new THREE.CanvasTexture(canvas);
-    const screenMat = new THREE.MeshBasicMaterial({ map: screenTexture });
+    const screenGeo = new THREE.PlaneGeometry(0.07, 0.146);
+    const screenMat = new THREE.MeshBasicMaterial({ map: screenTexture, transparent: true, toneMapped: false });
     const screen = new THREE.Mesh(screenGeo, screenMat);
-    screen.position.z = 0.006;
-    screen.position.y = 0.01;
+    screen.position.z = 0.0048;
     group.add(screen);
 
     // Label above phone
-    const label = this._createLabel('Mobile Phone - Call 112');
+    const label = this._createLabel('Call 112');
     label.position.y = 0.2;
     group.add(label);
 
     // Interaction ring
     const ringGeo = new THREE.RingGeometry(0.12, 0.14, 32);
     const ringMat = new THREE.MeshBasicMaterial({
-      color: 0x00ff44,
+      color: 0x30d158,
       transparent: true,
       opacity: 0.4,
       side: THREE.DoubleSide,
@@ -76,24 +85,7 @@ export class EmergencyPhone {
   }
 
   _createLabel(text) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, 512, 64, 8);
-    ctx.fill();
-    ctx.fillStyle = '#00ff44';
-    ctx.font = 'bold 22px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, 256, 32);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const geo = new THREE.PlaneGeometry(0.6, 0.075);
-    const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-    return new THREE.Mesh(geo, mat);
+    return createPillLabel(text, COLORS.green, { glyph: 'phone', heightM: 0.1 });
   }
 
   onHoverEnter() {

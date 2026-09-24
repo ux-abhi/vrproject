@@ -1,5 +1,19 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import {
+  COLORS, font, createUICanvas, uiMaterial, drawGlass, drawIconBadge,
+  drawGlyph, wrapText, rgba,
+} from './theme.js';
+
+// Canvas layout (logical px). Hit areas are derived from the same numbers so
+// what the player sees and what the ray hits always line up.
+const CW = 800;
+const CH = 600;
+const OPT_X = 100;
+const OPT_W = 600;
+const OPT_H = 66;
+const OPT_Y0 = 296;   // centre of first option row
+const OPT_STEP = 80;
 
 export class DialoguePanel {
   constructor(scene, cameraRig, stateManager, audioManager) {
@@ -15,6 +29,7 @@ export class DialoguePanel {
     // Panel dimensions
     this.panelWidth = 1.2;
     this.panelHeight = 0.9;
+    this.pxPerM = CW / this.panelWidth;
 
     // Create the 3D panel
     this.group = new THREE.Group();
@@ -22,29 +37,16 @@ export class DialoguePanel {
     this.scene.add(this.group);
 
     // Canvas for dynamic text
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = 800;
-    this.canvas.height = 600;
-    this.ctx = this.canvas.getContext('2d');
-
-    this.texture = new THREE.CanvasTexture(this.canvas);
-    this.texture.needsUpdate = true;
+    const { canvas, ctx, texture } = createUICanvas(CW, CH, 2);
+    this.canvas = canvas;
+    this.ctx = ctx;
+    this.texture = texture;
 
     // Panel mesh
     const panelGeo = new THREE.PlaneGeometry(this.panelWidth, this.panelHeight);
-    const panelMat = new THREE.MeshBasicMaterial({
-      map: this.texture,
-      transparent: true,
-    });
-    this.panel = new THREE.Mesh(panelGeo, panelMat);
+    this.panel = new THREE.Mesh(panelGeo, uiMaterial(this.texture));
+    this.panel.renderOrder = 50;
     this.group.add(this.panel);
-
-    // Backing
-    const backGeo = new THREE.PlaneGeometry(this.panelWidth + 0.04, this.panelHeight + 0.04);
-    const backMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.5 });
-    const backing = new THREE.Mesh(backGeo, backMat);
-    backing.position.z = -0.01;
-    this.group.add(backing);
 
     // Option button hit areas (invisible meshes for raycasting)
     this.buttonMeshes = [];
@@ -55,17 +57,24 @@ export class DialoguePanel {
   _createButtonHitAreas() {
     // Create up to 5 button hit areas
     for (let i = 0; i < 5; i++) {
-      const btnGeo = new THREE.PlaneGeometry(0.9, 0.1);
+      const btnGeo = new THREE.PlaneGeometry(OPT_W / this.pxPerM, OPT_H / this.pxPerM);
       const btnMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
         opacity: 0,
+        depthWrite: false,
       });
       const btn = new THREE.Mesh(btnGeo, btnMat);
       btn.visible = false;
 
-      // Position buttons vertically
-      btn.position.set(0, -0.05 - i * 0.13, 0.005);
+      // Canvas row centre -> panel-local metres
+      const cx = OPT_X + OPT_W / 2;
+      const cy = OPT_Y0 + i * OPT_STEP;
+      btn.position.set(
+        (cx - CW / 2) / this.pxPerM,
+        (CH / 2 - cy) / this.pxPerM,
+        0.005
+      );
       this.group.add(btn);
       this.buttonMeshes.push(btn);
 
@@ -180,130 +189,142 @@ export class DialoguePanel {
 
   _renderCurrentQuestion() {
     const ctx = this.ctx;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-
-    // Clear
-    ctx.clearRect(0, 0, w, h);
-
-    // Background
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.92)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, w, h, 16);
-    ctx.fill();
-
-    // Border
-    ctx.strokeStyle = '#00aaff';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.roundRect(5, 5, w - 10, h - 10, 12);
-    ctx.stroke();
-
-    // Header
-    ctx.fillStyle = '#00aaff';
-    ctx.font = 'bold 28px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('112 Emergency Call', w / 2, 45);
-
-    // Progress indicator
+    const w = CW;
+    const h = CH;
     const questions = CONFIG.W_QUESTIONS;
-    ctx.fillStyle = '#666666';
-    ctx.font = '18px Arial';
-    ctx.fillText(
-      `Question ${this.currentQuestion + 1} of ${questions.length}`,
-      w / 2,
-      75
-    );
 
-    // Progress bar
-    const barWidth = 300;
-    const barX = (w - barWidth) / 2;
-    ctx.fillStyle = '#333333';
-    ctx.fillRect(barX, 85, barWidth, 8);
-    ctx.fillStyle = '#00aaff';
-    ctx.fillRect(barX, 85, barWidth * ((this.currentQuestion) / questions.length), 8);
+    ctx.clearRect(0, 0, w, h);
+    drawGlass(ctx, 10, 10, w - 20, h - 20, 40, { tint: COLORS.green });
 
-    if (this.currentQuestion >= questions.length) {
-      ctx.fillStyle = '#4caf50';
-      ctx.font = 'bold 32px Arial';
-      ctx.fillText('Call Complete!', w / 2, h / 2);
+    // Header: call identity
+    drawIconBadge(ctx, 76, 70, 28, COLORS.green, 'phone');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = COLORS.label;
+    ctx.font = font(26, 700);
+    ctx.fillText('112 Emergency Call', 120, 64);
+
+    // Connected indicator
+    ctx.fillStyle = COLORS.green;
+    ctx.beginPath();
+    ctx.arc(126, 86, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.secondaryLabel;
+    ctx.font = font(16, 500);
+    ctx.fillText('Dispatch centre  ·  Connected', 138, 92);
+
+    // Question counter capsule
+    const done = this.currentQuestion >= questions.length;
+    const counter = done ? 'Done' : `${this.currentQuestion + 1} of ${questions.length}`;
+    ctx.font = font(15, 600);
+    const cwid = ctx.measureText(counter).width + 28;
+    ctx.fillStyle = COLORS.fill;
+    ctx.beginPath();
+    ctx.roundRect(w - 50 - cwid, 50, cwid, 32, 16);
+    ctx.fill();
+    ctx.fillStyle = COLORS.secondaryLabel;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(counter, w - 50 - cwid / 2, 66);
+
+    // Segmented progress
+    const segGap = 8;
+    const barX = 50;
+    const barW = w - 100;
+    const segW = (barW - segGap * (questions.length - 1)) / questions.length;
+    for (let i = 0; i < questions.length; i++) {
+      ctx.fillStyle = i < this.currentQuestion ? COLORS.green
+        : i === this.currentQuestion ? rgba(COLORS.green, 0.55) : COLORS.fill;
+      ctx.beginPath();
+      ctx.roundRect(barX + i * (segW + segGap), 118, segW, 6, 3);
+      ctx.fill();
+    }
+
+    if (done) {
+      drawIconBadge(ctx, w / 2, h / 2 - 20, 40, COLORS.green, 'check');
+      ctx.fillStyle = COLORS.label;
+      ctx.font = font(30, 700);
+      ctx.textAlign = 'center';
+      ctx.fillText('Call complete', w / 2, h / 2 + 60);
       this.texture.needsUpdate = true;
       return;
     }
 
     const q = questions[this.currentQuestion];
 
-    // Dispatcher icon
-    ctx.fillStyle = '#ff9800';
-    ctx.font = '20px Arial';
+    // Dispatcher speech bubble
+    ctx.font = font(23, 600);
+    const qLines = wrapText(ctx, q.question, w - 180);
+    const bubbleH = 52 + qLines.length * 30;
+    ctx.fillStyle = COLORS.fillStrong;
+    ctx.beginPath();
+    ctx.roundRect(50, 144, w - 100, bubbleH, 22);
+    ctx.fill();
+    ctx.fillStyle = COLORS.teal;
+    ctx.font = font(13, 700);
     ctx.textAlign = 'left';
-    ctx.fillText('Dispatcher:', 40, 130);
-
-    // Question text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '22px Arial';
-    ctx.textAlign = 'center';
-    const questionLines = this._wrapText(q.question, 50);
-    let qY = 170;
-    for (const line of questionLines) {
-      ctx.fillText(line, w / 2, qY);
-      qY += 28;
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('DISPATCHER', 76, 174);
+    ctx.fillStyle = COLORS.label;
+    ctx.font = font(23, 600);
+    let qy = 206;
+    for (const line of qLines) {
+      ctx.fillText(line, 76, qy);
+      qy += 30;
     }
 
-    // Options
-    ctx.textAlign = 'center';
+    // Answer options (iOS list cells)
     for (let i = 0; i < q.options.length; i++) {
-      const optY = 260 + i * 80;
+      const cy = OPT_Y0 + i * OPT_STEP;
+      const top = cy - OPT_H / 2;
       const isHovered = this.buttonInteractables[i]._hovered;
 
-      // Option background
-      ctx.fillStyle = isHovered ? 'rgba(0, 170, 255, 0.3)' : 'rgba(255, 255, 255, 0.08)';
+      ctx.fillStyle = isHovered ? rgba(COLORS.blue, 0.32) : COLORS.fill;
       ctx.beginPath();
-      ctx.roundRect(60, optY - 25, w - 120, 60, 8);
+      ctx.roundRect(OPT_X, top, OPT_W, OPT_H, 18);
       ctx.fill();
+      if (isHovered) {
+        ctx.strokeStyle = COLORS.blue;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(OPT_X + 1, top + 1, OPT_W - 2, OPT_H - 2, 17);
+        ctx.stroke();
+      }
 
-      // Option border
-      ctx.strokeStyle = isHovered ? '#00aaff' : '#444444';
-      ctx.lineWidth = 2;
+      // Letter disc
+      ctx.fillStyle = isHovered ? COLORS.blue : COLORS.fillStrong;
       ctx.beginPath();
-      ctx.roundRect(60, optY - 25, w - 120, 60, 8);
-      ctx.stroke();
-
-      // Option letter
-      ctx.fillStyle = isHovered ? '#00aaff' : '#888888';
-      ctx.font = 'bold 20px Arial';
-      ctx.textAlign = 'left';
-      ctx.fillText(String.fromCharCode(65 + i) + '.', 80, optY + 8);
+      ctx.arc(OPT_X + 36, cy, 17, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = font(16, 700);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String.fromCharCode(65 + i), OPT_X + 36, cy + 1);
 
       // Option text
-      ctx.fillStyle = isHovered ? '#ffffff' : '#cccccc';
-      ctx.font = '18px Arial';
+      ctx.fillStyle = isHovered ? '#FFFFFF' : 'rgba(255,255,255,0.88)';
+      ctx.font = font(19, 500);
       ctx.textAlign = 'left';
-      const optLines = this._wrapText(q.options[i], 45);
-      let lineY = optY + 2;
+      const optLines = wrapText(ctx, q.options[i], OPT_W - 120).slice(0, 2);
+      let ly = cy - (optLines.length - 1) * 11 + 1;
       for (const line of optLines) {
-        ctx.fillText(line, 120, lineY);
-        lineY += 22;
+        ctx.fillText(line, OPT_X + 66, ly);
+        ly += 22;
       }
+
+      drawGlyph(ctx, 'chevron', OPT_X + OPT_W - 26, cy, 22,
+        isHovered ? '#FFFFFF' : COLORS.tertiaryLabel);
     }
+
+    // Footer hint
+    ctx.fillStyle = COLORS.tertiaryLabel;
+    ctx.font = font(15, 500);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('Stay calm. Give the location first, then stay on the line.', w / 2, h - 40);
 
     this.texture.needsUpdate = true;
-  }
-
-  _wrapText(text, maxChars) {
-    const words = text.split(' ');
-    const lines = [];
-    let current = '';
-    for (const word of words) {
-      if ((current + ' ' + word).trim().length > maxChars) {
-        lines.push(current.trim());
-        current = word;
-      } else {
-        current = (current + ' ' + word).trim();
-      }
-    }
-    if (current.trim()) lines.push(current.trim());
-    return lines;
   }
 
   update(dt) {
