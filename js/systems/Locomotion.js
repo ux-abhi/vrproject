@@ -22,8 +22,7 @@ export class Locomotion {
     this.scene.add(this.arcLine);
     this.arcLine.visible = false;
 
-    // For desktop click-to-move
-    this._setupDesktopClickMove();
+    this._markerTimer = 0;
   }
 
   _createTeleportMarker() {
@@ -72,28 +71,34 @@ export class Locomotion {
     return new THREE.Line(geo, mat);
   }
 
-  _setupDesktopClickMove() {
+  // Desktop click-to-move: walk to the ground point under the cursor.
+  // Only called when the click did not hit an interactable.
+  moveToPointer(ndc, camera) {
     const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    window.addEventListener('click', (e) => {
-      if (this.inputManager.isVR) return;
-
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, this.camera);
-      const intersects = raycaster.intersectObjects(this.navMeshObjects, false);
-
-      if (intersects.length > 0) {
-        const point = intersects[0].point;
-        // Only move to ground-level points
-        if (Math.abs(point.y) < 1) {
-          this.moveTarget = new THREE.Vector3(point.x, 0, point.z);
-          this.isMoving = true;
-        }
+    raycaster.setFromCamera(ndc, camera);
+    const intersects = raycaster.intersectObjects(this.navMeshObjects, false);
+    if (intersects.length > 0) {
+      const point = intersects[0].point;
+      // Only move to ground-level points
+      if (Math.abs(point.y) < 1) {
+        this.moveTarget = new THREE.Vector3(point.x, 0, point.z);
+        this.isMoving = true;
+        this._showMarkerAt(point);
+        return true;
       }
-    });
+    }
+    return false;
+  }
+
+  cancelMove() {
+    this.isMoving = false;
+    this.moveTarget = null;
+  }
+
+  _showMarkerAt(point) {
+    this.teleportMarker.position.set(point.x, 0.02, point.z);
+    this.teleportMarker.visible = true;
+    this._markerTimer = 0.6;
   }
 
   update(dt) {
@@ -114,6 +119,12 @@ export class Locomotion {
     // VR teleportation handling
     if (this.inputManager.isVR) {
       this._updateVRTeleport();
+    }
+
+    // Desktop click marker fades out
+    if (!this.inputManager.isVR && this._markerTimer > 0) {
+      this._markerTimer -= dt;
+      if (this._markerTimer <= 0) this.teleportMarker.visible = false;
     }
 
     // Pulse the teleport marker

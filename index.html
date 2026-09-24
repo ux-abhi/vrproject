@@ -393,9 +393,227 @@
       background: rgba(255, 255, 255, 0.16);
     }
 
+    #desktop-controls-hint .top-only { display: none; }
+    #desktop-controls-hint[data-view="top"] .top-only { display: inline; }
+
     @media (max-width: 640px) {
       #desktop-controls-hint { display: none; }
     }
+
+    /* ── Start screen: mode + role pickers ─────────────────────── */
+
+    .setup { margin-bottom: 16px; }
+
+    .segmented {
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 14px;
+      background: var(--fill);
+      margin-bottom: 14px;
+    }
+
+    .segmented label {
+      position: relative;
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--secondary);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+    .segmented label:has(input:checked) { background: rgba(255, 255, 255, 0.16); color: var(--label); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .segmented label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+    .setup .hint { font-size: 14px; color: var(--tertiary); line-height: 1.5; }
+
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .roles[hidden] { display: none; }
+
+    .role {
+      position: relative;
+      display: block;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(118, 118, 128, 0.14);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .role input { position: absolute; opacity: 0; pointer-events: none; }
+    .role:has(input:checked) { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+    .role:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .role strong { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+    .role strong::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+    .role small { display: block; margin-top: 4px; font-size: 12px; color: var(--tertiary); line-height: 1.4; }
+
+    @media (max-width: 640px) {
+      .roles { grid-template-columns: 1fr; }
+    }
+
+    /* ── In-session toolbar, roster, exit sheet ─────────────────── */
+
+    .glass {
+      background: rgba(28, 28, 30, 0.72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+    }
+
+    #toolbar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 200;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    #toolbar[hidden] { display: none; }
+
+    .tb-group {
+      display: flex;
+      gap: 2px;
+      padding: 4px;
+      border-radius: 999px;
+    }
+
+    .tb-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--secondary);
+      font: 600 13px var(--font);
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tb-btn:hover { color: var(--label); background: rgba(255,255,255,0.08); }
+    .tb-btn[aria-pressed="true"] { background: rgba(255, 255, 255, 0.18); color: var(--label); }
+    .tb-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .tb-btn.exit { color: var(--red); }
+    .tb-btn[hidden] { display: none; }
+    .tb-btn kbd { min-width: 18px; height: 18px; font-size: 10px; padding: 0 4px; border-radius: 5px; }
+
+    .menu-wrap { position: relative; }
+
+    #role-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      min-width: 250px;
+      padding: 6px;
+      border-radius: 16px;
+      display: grid;
+      gap: 2px;
+    }
+
+    #role-menu[hidden] { display: none; }
+
+    #role-menu button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      color: var(--label);
+      font: 600 14px var(--font);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #role-menu button:hover { background: rgba(255,255,255,0.08); }
+    #role-menu button small { grid-column: 2; font-weight: 500; font-size: 12px; color: var(--tertiary); }
+    #role-menu .dot { width: 10px; height: 10px; border-radius: 50%; grid-row: span 2; }
+    #role-menu button[aria-checked="true"]::after { content: "✓"; color: var(--blue); grid-row: 1; grid-column: 3; }
+
+    #team-roster {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      list-style: none;
+      padding: 8px;
+      border-radius: 18px;
+      display: grid;
+      gap: 2px;
+      min-width: 200px;
+    }
+
+    #team-roster[hidden] { display: none; }
+
+    #team-roster li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    #team-roster li.active { background: rgba(255,255,255,0.08); }
+    #team-roster .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+    #team-roster .who { font-weight: 700; }
+    #team-roster .what { color: var(--secondary); flex: 1; }
+    #team-roster .now { font-size: 11px; font-weight: 700; color: var(--green); }
+
+    #exit-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 16px;
+    }
+
+    #exit-sheet[hidden] { display: none; }
+
+    #exit-sheet .alert {
+      width: min(320px, 100%);
+      border-radius: 18px;
+      overflow: hidden;
+      text-align: center;
+      animation: rise 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    #exit-sheet .alert h2 { font-size: 17px; font-weight: 700; padding: 20px 20px 4px; }
+    #exit-sheet .alert p { font-size: 13px; color: var(--secondary); padding: 0 20px 18px; line-height: 1.45; }
+    #exit-sheet .actions { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid rgba(255,255,255,0.12); }
+
+    #exit-sheet .actions button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      font: 17px var(--font);
+      padding: 13px;
+      color: var(--blue);
+      cursor: pointer;
+    }
+
+    #exit-sheet .actions button + button { border-left: 1px solid rgba(255,255,255,0.12); color: var(--red); font-weight: 600; }
+    #exit-sheet .actions button:hover { background: rgba(255,255,255,0.06); }
   </style>
 
   <!-- Polyfill for CanvasRenderingContext2D.roundRect -->
@@ -443,7 +661,7 @@
         <h2 id="brief-title">Scenario briefing</h2>
         <div class="chips">
           <span class="chip green">Easy</span>
-          <span class="chip blue">Single player</span>
+          <span class="chip blue">Solo or team</span>
           <span class="chip">Urban road · Daylight</span>
         </div>
         <p>
@@ -458,13 +676,28 @@
         </ol>
       </section>
 
+      <section class="card setup" aria-labelledby="mode-title">
+        <h2 id="mode-title">How do you want to train?</h2>
+        <div class="segmented" role="radiogroup" aria-label="Mode">
+          <label><input type="radio" name="mode" value="solo" checked>Solo</label>
+          <label><input type="radio" name="mode" value="team">Team with AI</label>
+        </div>
+        <p class="hint" id="mode-hint">You handle every step of the rescue yourself.</p>
+        <div class="roles" id="role-picker" role="radiogroup" aria-label="Your role" hidden>
+          <label class="role" style="--c: var(--orange)"><input type="radio" name="role" value="scene" checked><strong>Scene</strong><small>Vest and warning triangle. Sees traffic hazards.</small></label>
+          <label class="role" style="--c: var(--blue)"><input type="radio" name="role" value="people"><strong>Lead</strong><small>Leads the team and makes the 112 call.</small></label>
+          <label class="role" style="--c: var(--green)"><input type="radio" name="role" value="medical"><strong>Medical</strong><small>Checks the patient once safe. Sees vitals.</small></label>
+        </div>
+      </section>
+
       <div class="controls">
         <section class="card" aria-labelledby="desk-title">
           <h2 id="desk-title">Desktop</h2>
           <ul>
             <li>Move <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></li>
-            <li>Look around <span class="keys"><kbd>Right-drag</kbd></span></li>
-            <li>Interact / move <span class="keys"><kbd>Left-click</kbd></span></li>
+            <li>Look around <span class="keys"><kbd>Right-drag</kbd><kbd>Q</kbd><kbd>E</kbd></span></li>
+            <li>Interact / walk to <span class="keys"><kbd>Left-click</kbd></span></li>
+            <li>Immersive / top view <span class="keys"><kbd>V</kbd></span></li>
           </ul>
         </section>
         <section class="card" aria-labelledby="vr-title">
@@ -472,7 +705,8 @@
           <ul>
             <li>Select / teleport <span class="keys"><kbd>Trigger</kbd></span></li>
             <li>Grab objects <span class="keys"><kbd>Grip</kbd></span></li>
-            <li>Look direction <span class="keys"><kbd>Joystick</kbd></span></li>
+            <li>Turn <span class="keys"><kbd>Thumbstick ◀ ▶</kbd></span></li>
+            <li>Switch role / exit <span class="keys"><kbd>HUD buttons</kbd></span></li>
           </ul>
         </section>
       </div>
@@ -489,7 +723,53 @@
     <span><kbd>Right-drag</kbd> Look</span>
     <span class="sep"></span>
     <span><kbd>Click</kbd> Interact</span>
+    <span class="sep"></span>
+    <span><kbd>V</kbd> View</span>
+    <span class="top-only">&nbsp;<kbd>Scroll</kbd> Zoom</span>
   </div>
+
+  <!-- Session toolbar -->
+  <div id="toolbar" hidden>
+    <div class="tb-group glass" role="group" aria-label="View">
+      <button class="tb-btn" data-view="immersive" aria-pressed="true">Immersive</button>
+      <button class="tb-btn" data-view="top" aria-pressed="false">Top view</button>
+    </div>
+    <div class="menu-wrap">
+      <div class="tb-group glass">
+        <button class="tb-btn" id="role-button" aria-haspopup="true" aria-expanded="false" hidden>Switch role</button>
+        <button class="tb-btn exit" id="exit-button">Exit <kbd>Esc</kbd></button>
+      </div>
+      <div id="role-menu" class="glass" role="menu" hidden>
+        <button role="menuitemradio" data-role="scene" aria-checked="false"><span class="dot" style="background: var(--orange)"></span>Scene management<small>Vest, triangle, hazards</small></button>
+        <button role="menuitemradio" data-role="people" aria-checked="false"><span class="dot" style="background: var(--blue)"></span>People management<small>Lead, 112 call</small></button>
+        <button role="menuitemradio" data-role="medical" aria-checked="false"><span class="dot" style="background: var(--green)"></span>Medical management<small>Patient, vitals</small></button>
+      </div>
+    </div>
+  </div>
+
+  <ul id="team-roster" class="glass" aria-label="Team" hidden></ul>
+
+  <div id="exit-sheet" hidden>
+    <div class="alert glass" role="alertdialog" aria-labelledby="exit-title" aria-describedby="exit-desc">
+      <h2 id="exit-title">End training?</h2>
+      <p id="exit-desc">Your progress in this run will be lost and you'll return to the start screen.</p>
+      <div class="actions">
+        <button id="exit-cancel">Cancel</button>
+        <button id="exit-confirm">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Start screen: show the role picker only for team mode
+    document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => {
+      const team = document.querySelector('input[name="mode"]:checked').value === 'team';
+      document.getElementById('role-picker').hidden = !team;
+      document.getElementById('mode-hint').textContent = team
+        ? 'Pick your role. Two AI teammates take the others, and you can switch role at any time.'
+        : 'You handle every step of the rescue yourself.';
+    }));
+  </script>
 
   <script type="module" src="./js/main.js"></script>
 </body>

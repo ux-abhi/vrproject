@@ -27,15 +27,20 @@ const PHASE = {
   [S.FAIL]: { label: 'Scene not secured', color: COLORS.red, glyph: 'warning' },
 };
 
-const W = 640;
-const H = 200;
+const W = 760;
+const H = 260;
 const CARD_H = 132;
+const WIDTH_M = 1.2;
+const PX_PER_M = W / WIDTH_M;
+const BTN_Y = 222;      // centre of the VR button row (canvas px)
+const BTN_H = 40;
 
 export class HUDOverlay {
-  constructor(scene, cameraRig, stateManager) {
+  constructor(scene, cameraRig, stateManager, viewManager) {
     this.scene = scene;
     this.cameraRig = cameraRig;
     this.stateManager = stateManager;
+    this.view = viewManager;
 
     this.group = new THREE.Group();
     this.scene.add(this.group);
@@ -44,8 +49,7 @@ export class HUDOverlay {
     this.ctx = ctx;
     this.texture = texture;
 
-    // HUD panel (1 m wide)
-    const geo = new THREE.PlaneGeometry(1.0, 1.0 * (H / W));
+    const geo = new THREE.PlaneGeometry(WIDTH_M, WIDTH_M * (H / W));
     const mat = uiMaterial(this.texture, { depthTest: false });
     this.panel = new THREE.Mesh(geo, mat);
     this.panel.renderOrder = 100;
@@ -59,10 +63,56 @@ export class HUDOverlay {
     this.failTimer = 0;
     this._lastSecond = -1;
 
-    // Listen for state changes
+    // Team mode / guidance extras
+    this.role = null;          // { short, color }
+    this.status = null;        // text shown instead of the task while a teammate works
+    this.distance = null;      // metres to the current goal
+    this.transcript = null;    // { speaker, text, color }
+
+    // VR-only buttons on the HUD (desktop uses the HTML toolbar)
+    this.showButtons = false;
+    this.onExit = () => {};
+    this.onSwitchRole = () => {};
+    this._exitArmed = 0;
+    this.buttons = [
+      this._makeButton('role', 'Switch role', COLORS.blue, 150, () => this.onSwitchRole()),
+      this._makeButton('exit', 'Exit', COLORS.red, 110, () => this._pressExit()),
+    ];
+
     this.stateManager.on((oldState, newState) => {
       this._onStateChange(oldState, newState);
     });
+  }
+
+  _makeButton(id, label, color, width, action) {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(width / PX_PER_M, BTN_H / PX_PER_M),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, depthTest: false })
+    );
+    mesh.visible = false;
+    this.group.add(mesh);
+    const btn = {
+      id, label, color, width, mesh, hovered: false, shown: false, x: 0,
+      isInteractable: false,
+      onHoverEnter: () => { btn.hovered = true; this._render(); },
+      onHoverExit: () => { btn.hovered = false; this._render(); },
+      onSelect: action,
+    };
+    return btn;
+  }
+
+  getInteractables() {
+    return this.buttons;
+  }
+
+  _pressExit() {
+    if (this._exitArmed > 0) {
+      this._exitArmed = 0;
+      this.onExit();
+    } else {
+      this._exitArmed = 3;
+      this._render();
+    }
   }
 
   _onStateChange(oldState, newState) {
@@ -81,7 +131,7 @@ export class HUDOverlay {
       S.COMPLETE,
     ].includes(newState)) {
       const msgs = {
-        [S.TRIANGLE_PICKUP]: 'Vest on. You are visible to traffic.',
+        [S.TRIANGLE_PICKUP]: 'Vest on. Visible to traffic.',
         [S.TRIANGLE_PLACED]: 'Scene secured. Traffic is warned.',
         [S.CALL_COMPLETE]: 'Help is on the way.',
         [S.COMPLETE]: 'Excellent work. Training complete.',
@@ -89,6 +139,7 @@ export class HUDOverlay {
       this.successMessage = msgs[newState] || 'Step completed';
       this.successTimer = 3;
     }
+    if (newState !== S.CALLING_112) this.transcript = null;
 
     this._render();
   }
@@ -104,49 +155,69 @@ export class HUDOverlay {
     this._render();
   }
 
+  setRole(role) {
+    this.role = role;
+    this._render();
+  }
+
+  setStatus(text) {
+    if (text === this.status) return;
+    this.status = text;
+    this._render();
+  }
+
+  setDistance(metres) {
+    const rounded = metres === null ? null : Math.round(metres);
+    if (rounded === this.distance) return;
+    this.distance = rounded;
+    this._render();
+  }
+
+  setTranscript(t) {
+    this.transcript = t;
+    this._render();
+  }
+
+  setButtonsVisible(showRole, visible) {
+    this.showButtons = visible;
+    this.buttons[0].shown = visible && showRole;
+    this.buttons[1].shown = visible;
+    this._render();
+  }
+
   _render() {
     const ctx = this.ctx;
     ctx.clearRect(0, 0, W, H);
 
     const phase = PHASE[this.currentState] || PHASE[S.INTRO];
+    const standby = !!this.status && this.currentState !== S.FAIL;
+    const accent = standby ? COLORS.teal : phase.color;
     const x = 8;
     const y = 8;
     const cw = W - 16;
 
-    drawGlass(ctx, x, y, cw, CARD_H, 30, { tint: phase.color });
+    drawGlass(ctx, x, y, cw, CARD_H, 30, { tint: accent });
+    drawIconBadge(ctx, x + 50, y + 54, 26, accent, standby ? 'person' : phase.glyph);
 
-    // Phase badge
-    drawIconBadge(ctx, x + 50, y + 54, 26, phase.color, phase.glyph);
-
-    // Eyebrow: phase + step count
+    // Eyebrow: phase, step count, distance to goal
     const stepIdx = STEP_ORDER.indexOf(this.currentState);
-    const eyebrow = stepIdx >= 0
-      ? `${phase.label.toUpperCase()}  ·  STEP ${stepIdx + 1} OF ${STEP_ORDER.length}`
-      : phase.label.toUpperCase();
-    ctx.fillStyle = phase.color;
+    const parts = [standby ? 'TEAMMATE ON IT' : phase.label.toUpperCase()];
+    if (stepIdx >= 0) parts.push(`STEP ${stepIdx + 1} OF ${STEP_ORDER.length}`);
+    if (!standby && this.distance !== null && this.distance > 1) parts.push(`${this.distance} M AWAY`);
+    ctx.fillStyle = accent;
     ctx.font = font(13, 700);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText(eyebrow, x + 92, y + 36);
+    ctx.fillText(parts.join('  ·  '), x + 92, y + 36);
 
-    // Task text (strip the legacy "Step n:" prefix; the eyebrow shows it)
-    const task = this.currentText.replace(/^Step \d+:\s*/, '');
-    ctx.fillStyle = COLORS.label;
-    ctx.font = font(21, 600);
-    const lines = wrapText(ctx, task, cw - 92 - 110).slice(0, 2);
-    let ty = y + 64;
-    for (const line of lines) {
-      ctx.fillText(line, x + 92, ty);
-      ty += 26;
-    }
-
-    // Timer capsule
+    // Right-hand chips: role, then timer
+    let chipRight = x + cw - 16;
     const elapsed = this.stateManager.getTotalDuration();
     if (elapsed > 0) {
       const mins = Math.floor(elapsed / 60);
       const secs = Math.floor(elapsed % 60);
       const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      const tx = x + cw - 96;
+      const tx = chipRight - 80;
       ctx.fillStyle = COLORS.fill;
       ctx.beginPath();
       ctx.roundRect(tx, y + 18, 80, 30, 15);
@@ -156,6 +227,38 @@ export class HUDOverlay {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(timeStr, tx + 40, y + 34);
+      chipRight = tx - 8;
+    }
+    if (this.role) {
+      const text = `You · ${this.role.short}`;
+      ctx.font = font(14, 700);
+      const rw = ctx.measureText(text).width + 34;
+      const rx = chipRight - rw;
+      ctx.fillStyle = rgba(this.role.color, 0.22);
+      ctx.beginPath();
+      ctx.roundRect(rx, y + 18, rw, 30, 15);
+      ctx.fill();
+      ctx.fillStyle = this.role.color;
+      ctx.beginPath();
+      ctx.arc(rx + 14, y + 33, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLORS.label;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, rx + 24, y + 34);
+    }
+
+    // Task text (or what a teammate is doing)
+    const task = standby ? this.status : this.currentText.replace(/^Step \d+:\s*/, '');
+    ctx.fillStyle = COLORS.label;
+    ctx.font = font(21, 600);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const lines = wrapText(ctx, task, cw - 92 - 40).slice(0, 2);
+    let ty = y + 66;
+    for (const line of lines) {
+      ctx.fillText(line, x + 92, ty);
+      ty += 26;
     }
 
     // Segmented progress bar
@@ -164,53 +267,88 @@ export class HUDOverlay {
     const barX = x + 92;
     const barW = cw - 92 - 24;
     const segW = (barW - segGap * (STEP_ORDER.length - 1)) / STEP_ORDER.length;
-    const barY = y + CARD_H - 24;
+    const barY = y + CARD_H - 22;
     for (let i = 0; i < STEP_ORDER.length; i++) {
       const sx = barX + i * (segW + segGap);
       let fill = COLORS.fill;
       if (i < done) fill = COLORS.green;
-      else if (i === stepIdx) fill = phase.color;
+      else if (i === stepIdx) fill = accent;
       ctx.fillStyle = fill;
       ctx.beginPath();
       ctx.roundRect(sx, barY, segW, 6, 3);
       ctx.fill();
     }
 
-    // Toast below the card
+    // Row 2: toast (warnings win over successes), else call transcript
     const toast = this.failMessage
       ? { text: this.failMessage, color: COLORS.red, glyph: 'warning' }
       : this.successMessage
         ? { text: this.successMessage, color: COLORS.green, glyph: 'check' }
         : null;
+    const rowY = y + CARD_H + 8;
     if (toast) {
       ctx.font = font(17, 600);
-      const tw = ctx.measureText(toast.text).width + 72;
+      const tw = Math.min(ctx.measureText(toast.text).width + 72, W - 20);
       const tx = (W - tw) / 2;
-      const tyy = y + CARD_H + 10;
-      drawGlass(ctx, tx, tyy, tw, 42, 21, { fill: rgba(toast.color, 0.9), border: 'rgba(255,255,255,0.3)' });
-      drawGlyph(ctx, toast.glyph, tx + 26, tyy + 21, 20, '#FFFFFF');
+      drawGlass(ctx, tx, rowY, tw, 42, 21, { fill: rgba(toast.color, 0.9), border: 'rgba(255,255,255,0.3)' });
+      drawGlyph(ctx, toast.glyph, tx + 26, rowY + 21, 20, '#FFFFFF');
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(toast.text, tx + 46, tyy + 22);
+      ctx.fillText(toast.text, tx + 46, rowY + 22);
+    } else if (this.transcript) {
+      const { speaker, text, color } = this.transcript;
+      ctx.font = font(16, 500);
+      const line = wrapText(ctx, text, W - 220)[0] || '';
+      ctx.font = font(16, 700);
+      const sw = ctx.measureText(speaker + '  ').width;
+      ctx.font = font(16, 500);
+      const tw = sw + ctx.measureText(line).width + 40;
+      const tx = (W - tw) / 2;
+      drawGlass(ctx, tx, rowY, tw, 42, 21, { fill: 'rgba(28,28,30,0.88)' });
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.font = font(16, 700);
+      ctx.fillStyle = color;
+      ctx.fillText(speaker, tx + 20, rowY + 22);
+      ctx.font = font(16, 500);
+      ctx.fillStyle = COLORS.label;
+      ctx.fillText(line, tx + 20 + sw, rowY + 22);
+    }
+
+    // Row 3: VR buttons (right aligned)
+    let bx = W - 12;
+    for (let i = this.buttons.length - 1; i >= 0; i--) {
+      const b = this.buttons[i];
+      b.isInteractable = b.shown;
+      b.mesh.visible = b.shown;
+      if (!b.shown) continue;
+      const armed = b.id === 'exit' && this._exitArmed > 0;
+      const label = armed ? 'Tap to confirm' : b.label;
+      const width = armed ? 170 : b.width;
+      const cx = bx - width / 2;
+      ctx.save();
+      ctx.fillStyle = armed ? COLORS.red : b.hovered ? rgba(b.color, 0.95) : 'rgba(44,44,46,0.92)';
+      ctx.beginPath();
+      ctx.roundRect(cx - width / 2, BTN_Y - BTN_H / 2, width, BTN_H, BTN_H / 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = armed || b.hovered ? '#FFFFFF' : b.color;
+      ctx.font = font(16, 600);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, cx, BTN_Y + 1);
+      b.mesh.scale.x = width / b.width;
+      b.mesh.position.set((cx - W / 2) / PX_PER_M, (H / 2 - BTN_Y) / PX_PER_M, 0.002);
+      bx -= width + 10;
     }
 
     this.texture.needsUpdate = true;
   }
 
   update(dt) {
-    // Position in front of player, slightly above eye level
-    const camWorldPos = new THREE.Vector3();
-    const camWorldDir = new THREE.Vector3(0, 0, -1);
-    this.cameraRig.getWorldPosition(camWorldPos);
-    camWorldDir.applyQuaternion(this.cameraRig.quaternion);
-
-    this.group.position.set(
-      camWorldPos.x + camWorldDir.x * 2,
-      camWorldPos.y + 2.2,
-      camWorldPos.z + camWorldDir.z * 2
-    );
-    this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
+    // Keep in front of the viewer, above the centre of view
+    this.view.placeUI(this.group, { distance: 2, height: this.view.isTop ? 0.72 : 0.5, dt });
 
     let dirty = false;
 
@@ -228,6 +366,11 @@ export class HUDOverlay {
         this.failMessage = null;
         dirty = true;
       }
+    }
+
+    if (this._exitArmed > 0) {
+      this._exitArmed -= dt;
+      if (this._exitArmed <= 0) dirty = true;
     }
 
     // Re-render once per second for the timer (not every frame)

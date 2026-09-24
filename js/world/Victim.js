@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
+import {
+  COLORS, font, createUICanvas, uiMaterial, drawGlass, drawIconBadge, billboard, rgba,
+} from '../ui/theme.js';
 
 export class Victim {
   constructor(scene) {
@@ -11,6 +14,107 @@ export class Victim {
     const pos = CONFIG.VICTIM_POS;
     this.group.position.set(pos.x, pos.y, pos.z);
     this.scene.add(this.group);
+
+    this._buildDangerZone();
+    this._buildVitals();
+  }
+
+  // Red ring showing how close is too close before the scene is secured
+  _buildDangerZone() {
+    const r = CONFIG.VICTIM_FAIL_RADIUS;
+    const zone = new THREE.Group();
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(r - 0.12, r, 64),
+      new THREE.MeshBasicMaterial({ color: 0xff453a, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    zone.add(ring);
+    const fill = new THREE.Mesh(
+      new THREE.CircleGeometry(r - 0.12, 64),
+      new THREE.MeshBasicMaterial({ color: 0xff453a, transparent: true, opacity: 0.08, depthWrite: false, toneMapped: false })
+    );
+    fill.rotation.x = -Math.PI / 2;
+    zone.add(fill);
+    zone.position.set(CONFIG.VICTIM_POS.x, 0.18, CONFIG.VICTIM_POS.z);
+    this.scene.add(zone);
+    this.dangerZone = zone;
+    this._dangerRing = ring;
+  }
+
+  setDangerZoneVisible(on) {
+    this.dangerZone.visible = on;
+  }
+
+  // Patient card for Medical management
+  _buildVitals() {
+    const W = 420;
+    const H = 250;
+    this._vitalsCanvas = createUICanvas(W, H, 2);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.84, 0.5), uiMaterial(this._vitalsCanvas.texture));
+    mesh.position.y = 2.45;
+    mesh.renderOrder = 20;
+    billboard(mesh);
+    this.group.add(mesh);
+    this.vitals = mesh;
+    this.vitals.visible = false;
+    this._vitalsDetail = null;
+    this._renderVitals(false);
+  }
+
+  setVitals(visible, detailed) {
+    this.vitals.visible = visible;
+    if (visible && detailed !== this._vitalsDetail) this._renderVitals(detailed);
+  }
+
+  _renderVitals(detailed) {
+    this._vitalsDetail = detailed;
+    const { ctx, texture } = this._vitalsCanvas;
+    const W = 420;
+    const H = 250;
+    ctx.clearRect(0, 0, W, H);
+    drawGlass(ctx, 6, 6, W - 12, H - 12, 26, { tint: COLORS.green });
+    drawIconBadge(ctx, 40, 40, 18, COLORS.green, 'cross');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = COLORS.green;
+    ctx.font = font(12, 700);
+    ctx.fillText('PATIENT  ·  MEDICAL VIEW', 68, 34);
+    ctx.fillStyle = COLORS.label;
+    ctx.font = font(18, 700);
+    ctx.fillText('Conscious, dazed', 68, 56);
+
+    const rows = detailed
+      ? [
+        ['Pulse', '104 bpm', COLORS.orange],
+        ['Breathing', '20 / min, normal', COLORS.green],
+        ['Skin', 'Pale, sweaty', COLORS.orange],
+        ['Injury', 'Forehead cut, minor bleeding', COLORS.red],
+      ]
+      : [
+        ['Visual check', 'Standing, responsive', COLORS.green],
+        ['Visible injury', 'Holding head', COLORS.orange],
+        ['Vitals', 'Get within 3 m to assess', COLORS.secondaryLabel],
+      ];
+    let y = 92;
+    for (const [k, v, c] of rows) {
+      ctx.fillStyle = rgba('#767680', 0.18);
+      ctx.beginPath();
+      ctx.roundRect(20, y - 22, W - 40, 32, 10);
+      ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(36, y - 6, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = COLORS.secondaryLabel;
+      ctx.font = font(14, 600);
+      ctx.fillText(k, 48, y - 1);
+      ctx.fillStyle = COLORS.label;
+      ctx.textAlign = 'right';
+      ctx.fillText(v, W - 34, y - 1);
+      ctx.textAlign = 'left';
+      y += 38;
+    }
+    texture.needsUpdate = true;
   }
 
   _build() {
@@ -139,6 +243,10 @@ export class Victim {
 
   update(dt, elapsed) {
     this.swayTime += dt;
+
+    if (this.dangerZone.visible) {
+      this._dangerRing.material.opacity = 0.45 + Math.sin(elapsed * 4) * 0.25;
+    }
 
     // Dazed swaying motion
     const swayAmount = 0.02;

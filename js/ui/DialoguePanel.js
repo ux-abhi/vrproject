@@ -16,8 +16,9 @@ const OPT_Y0 = 296;   // centre of first option row
 const OPT_STEP = 80;
 
 export class DialoguePanel {
-  constructor(scene, cameraRig, stateManager, audioManager) {
+  constructor(scene, cameraRig, stateManager, audioManager, viewManager) {
     this.scene = scene;
+    this.view = viewManager;
     this.cameraRig = cameraRig;
     this.stateManager = stateManager;
     this.audioManager = audioManager;
@@ -25,6 +26,8 @@ export class DialoguePanel {
     this.isActive = false;
     this.currentQuestion = 0;
     this.selectedOptions = [];
+    this._order = [];       // shuffled display order per question
+    this._feedback = null;  // { display, correct, timer }
 
     // Panel dimensions
     this.panelWidth = 1.2;
@@ -104,13 +107,26 @@ export class DialoguePanel {
     return this.buttonInteractables;
   }
 
-  show() {
+  show(startQuestion = 0) {
     this.isActive = true;
-    this.currentQuestion = 0;
+    this.currentQuestion = startQuestion;
     this.group.visible = true;
+    this._feedback = null;
+
+    // Shuffle answer order so the right answer is not always "A"
+    if (startQuestion === 0 || this._order.length === 0) {
+      this._order = CONFIG.W_QUESTIONS.map(q => {
+        const idx = q.options.map((_, i) => i);
+        for (let i = idx.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [idx[i], idx[j]] = [idx[j], idx[i]];
+        }
+        return idx;
+      });
+    }
 
     // Position in front of player
-    this._positionInFrontOfPlayer();
+    this.view.placeUI(this.group, { distance: 2, height: this._height(), snap: true });
 
     // Enable button interactables for current question
     this._updateButtons();
@@ -126,20 +142,8 @@ export class DialoguePanel {
     }
   }
 
-  _positionInFrontOfPlayer() {
-    // Get camera world position and direction
-    const camWorldPos = new THREE.Vector3();
-    this.cameraRig.getWorldPosition(camWorldPos);
-    const camDir = new THREE.Vector3(0, 0, -1);
-    camDir.applyQuaternion(this.cameraRig.quaternion);
-
-    // Place panel 2m in front of player at eye level
-    this.group.position.set(
-      camWorldPos.x + camDir.x * 2,
-      camWorldPos.y + 1.5,
-      camWorldPos.z + camDir.z * 2
-    );
-    this.group.lookAt(camWorldPos.x, camWorldPos.y + 1.5, camWorldPos.z);
+  _height() {
+    return this.view.isTop ? -0.12 : -0.15;
   }
 
   _updateButtons() {
@@ -159,7 +163,7 @@ export class DialoguePanel {
   }
 
   _selectOption(index) {
-    if (!this.isActive) return;
+    if (!this.isActive || this._feedback) return;
 
     const questions = CONFIG.W_QUESTIONS;
     if (this.currentQuestion >= questions.length) return;
@@ -167,13 +171,24 @@ export class DialoguePanel {
     const q = questions[this.currentQuestion];
     if (index >= q.options.length) return;
 
+    const original = this._order[this.currentQuestion][index];
+    const correct = original === q.correct;
     this.audioManager.playClick();
     this.selectedOptions.push({
       question: this.currentQuestion,
-      answer: index,
-      correct: index === q.correct,
+      answer: original,
+      correct,
     });
 
+    // Closed loop: show the dispatcher's acknowledgement before moving on
+    this._feedback = { display: index, correct, timer: correct ? 1.1 : 2.4 };
+    for (const it of this.buttonInteractables) it.isInteractable = false;
+    this._renderCurrentQuestion();
+  }
+
+  _advance() {
+    const questions = CONFIG.W_QUESTIONS;
+    this._feedback = null;
     this.currentQuestion++;
 
     if (this.currentQuestion >= questions.length) {
@@ -252,9 +267,14 @@ export class DialoguePanel {
 
     const q = questions[this.currentQuestion];
 
-    // Dispatcher speech bubble
+    // Dispatcher speech bubble (acknowledges the last answer during feedback)
+    const fb = this._feedback;
+    const order = this._order[this.currentQuestion];
+    const bubbleText = !fb ? q.question
+      : fb.correct ? 'Understood. Thank you.'
+        : `Please be precise: "${q.options[q.correct]}"`;
     ctx.font = font(23, 600);
-    const qLines = wrapText(ctx, q.question, w - 180);
+    const qLines = wrapText(ctx, bubbleText, w - 180).slice(0, 2);
     const bubbleH = 52 + qLines.length * 30;
     ctx.fillStyle = COLORS.fillStrong;
     ctx.beginPath();
@@ -268,6 +288,7 @@ export class DialoguePanel {
     ctx.fillStyle = COLORS.label;
     ctx.font = font(23, 600);
     let qy = 206;
+    ctx.fillStyle = fb ? (fb.correct ? COLORS.green : COLORS.orange) : COLORS.label;
     for (const line of qLines) {
       ctx.fillText(line, 76, qy);
       qy += 30;
@@ -277,14 +298,17 @@ export class DialoguePanel {
     for (let i = 0; i < q.options.length; i++) {
       const cy = OPT_Y0 + i * OPT_STEP;
       const top = cy - OPT_H / 2;
-      const isHovered = this.buttonInteractables[i]._hovered;
+      const isHovered = !fb && this.buttonInteractables[i]._hovered;
+      const isRight = fb && order[i] === q.correct;
+      const isWrongPick = fb && !fb.correct && fb.display === i;
+      const stateColor = isRight ? COLORS.green : isWrongPick ? COLORS.red : null;
 
-      ctx.fillStyle = isHovered ? rgba(COLORS.blue, 0.32) : COLORS.fill;
+      ctx.fillStyle = stateColor ? rgba(stateColor, 0.3) : isHovered ? rgba(COLORS.blue, 0.32) : COLORS.fill;
       ctx.beginPath();
       ctx.roundRect(OPT_X, top, OPT_W, OPT_H, 18);
       ctx.fill();
-      if (isHovered) {
-        ctx.strokeStyle = COLORS.blue;
+      if (isHovered || stateColor) {
+        ctx.strokeStyle = stateColor || COLORS.blue;
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.roundRect(OPT_X + 1, top + 1, OPT_W - 2, OPT_H - 2, 17);
@@ -292,21 +316,33 @@ export class DialoguePanel {
       }
 
       // Letter disc
-      ctx.fillStyle = isHovered ? COLORS.blue : COLORS.fillStrong;
+      ctx.fillStyle = stateColor || (isHovered ? COLORS.blue : COLORS.fillStrong);
       ctx.beginPath();
       ctx.arc(OPT_X + 36, cy, 17, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = font(16, 700);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String.fromCharCode(65 + i), OPT_X + 36, cy + 1);
+      if (isRight) {
+        drawGlyph(ctx, 'check', OPT_X + 36, cy, 20, '#FFFFFF');
+      } else if (isWrongPick) {
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(OPT_X + 30, cy - 6); ctx.lineTo(OPT_X + 42, cy + 6);
+        ctx.moveTo(OPT_X + 42, cy - 6); ctx.lineTo(OPT_X + 30, cy + 6);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = font(16, 700);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String.fromCharCode(65 + i), OPT_X + 36, cy + 1);
+      }
 
       // Option text
       ctx.fillStyle = isHovered ? '#FFFFFF' : 'rgba(255,255,255,0.88)';
       ctx.font = font(19, 500);
       ctx.textAlign = 'left';
-      const optLines = wrapText(ctx, q.options[i], OPT_W - 120).slice(0, 2);
+      const optLines = wrapText(ctx, q.options[order[i]], OPT_W - 120).slice(0, 2);
       let ly = cy - (optLines.length - 1) * 11 + 1;
       for (const line of optLines) {
         ctx.fillText(line, OPT_X + 66, ly);
@@ -329,9 +365,11 @@ export class DialoguePanel {
 
   update(dt) {
     if (!this.isActive) return;
-    // Keep facing the player
-    const camWorldPos = new THREE.Vector3();
-    this.cameraRig.getWorldPosition(camWorldPos);
-    this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
+    this.view.placeUI(this.group, { distance: 2, height: this._height(), dt });
+
+    if (this._feedback) {
+      this._feedback.timer -= dt;
+      if (this._feedback.timer <= 0) this._advance();
+    }
   }
 }

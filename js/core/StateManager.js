@@ -60,6 +60,7 @@ export class StateManager {
 
     if (newState === CONFIG.STATES.FAIL) {
       this.failCount++;
+      this.stateBeforeFail = oldState;
     }
 
     this.emit(oldState, newState);
@@ -98,7 +99,10 @@ export class StateManager {
 
   // Reset back to where the player needs to resume after a fail
   resetAfterFail() {
-    // Figure out which state to go back to based on what was achieved
+    // Resume exactly where the player was (e.g. still needing to pick up the triangle)
+    if (this.stateBeforeFail && this.transition(this.stateBeforeFail)) return;
+
+    // Fallback: infer from what was achieved
     if (this.stateTimestamps[CONFIG.STATES.TRIANGLE_PICKUP]) {
       this.transition(CONFIG.STATES.TRIANGLE_HELD);
     } else if (this.stateTimestamps[CONFIG.STATES.VEST_PICKUP]) {

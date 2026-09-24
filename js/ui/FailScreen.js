@@ -10,8 +10,9 @@ const CH = 500;
 const PX_PER_M = CW / 1.6;
 
 export class FailScreen {
-  constructor(scene, cameraRig, stateManager, audioManager) {
+  constructor(scene, cameraRig, stateManager, audioManager, viewManager) {
     this.scene = scene;
+    this.view = viewManager;
     this.cameraRig = cameraRig;
     this.stateManager = stateManager;
     this.audioManager = audioManager;
@@ -87,18 +88,8 @@ export class FailScreen {
 
     this.audioManager.playFail();
 
-    // Position in front of player
-    const camWorldPos = new THREE.Vector3();
-    this.cameraRig.getWorldPosition(camWorldPos);
-    const camDir = new THREE.Vector3(0, 0, -1);
-    camDir.applyQuaternion(this.cameraRig.quaternion);
-
-    this.group.position.set(
-      camWorldPos.x + camDir.x * 2,
-      camWorldPos.y + 1.5,
-      camWorldPos.z + camDir.z * 2
-    );
-    this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
+    // Position in front of the viewer
+    this.view.placeUI(this.group, { distance: 2, height: -0.15, snap: true });
 
     this._render();
   }
@@ -167,9 +158,7 @@ export class FailScreen {
     if (!this.isActive) return;
 
     this.timer += dt;
-    const camWorldPos = new THREE.Vector3();
-    this.cameraRig.getWorldPosition(camWorldPos);
-    this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
+    this.view.placeUI(this.group, { distance: 2, height: -0.15, dt });
 
     // Pulsing red glow
     this._glow.material.opacity = 0.35 + Math.sin(this.timer * 3) * 0.2;

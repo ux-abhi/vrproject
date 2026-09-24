@@ -287,6 +287,9 @@ export class Vehicles {
       this.scene.add(shard);
     }
 
+    // Steam from the red car's damaged radiator
+    this._createSteam(new THREE.Vector3(collisionPos.x + 0.35, 0.95, collisionPos.z + 2.55));
+
     // Hazard lights (blinking orange) on both cars
     this._addHazardLights(car1);
     this._addHazardLights(car2);
@@ -320,14 +323,56 @@ export class Vehicles {
     playerCar.add(well);
   }
 
+  _createSteam(origin) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,255,255,0.55)');
+    g.addColorStop(0.5, 'rgba(240,240,240,0.2)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(c);
+
+    this.steam = [];
+    this._steamOrigin = origin;
+    for (let i = 0; i < 26; i++) {
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0 }));
+      sprite.userData.life = i / 26;   // stagger so the plume is continuous
+      sprite.userData.seed = Math.random();
+      this.scene.add(sprite);
+      this.steam.push(sprite);
+    }
+  }
+
+  _updateSteam(dt) {
+    const o = this._steamOrigin;
+    for (const p of this.steam) {
+      const u = p.userData;
+      u.life += dt / 3.2;
+      if (u.life >= 1) {
+        u.life -= 1;
+        u.seed = Math.random();
+      }
+      const t = u.life;
+      p.position.set(
+        o.x + (u.seed - 0.5) * 0.5 + t * 0.9,   // drifts with the wind
+        o.y + t * 1.6,
+        o.z + (u.seed - 0.5) * 0.4 + t * 0.2
+      );
+      p.scale.setScalar(0.25 + t * 1.3);
+      p.material.opacity = Math.sin(t * Math.PI) * 0.32;
+    }
+  }
+
   _createParkedCars() {
     const parked = [
-      [0xd9dcdf, -3.0, -46, Math.PI],
-      [0x1c1c1e, -3.0, -60, Math.PI],
-      [0x2e4a3e, -3.0, 74, Math.PI],
-      [0xf2f2f2, -3.0, 88, Math.PI],
+      [0xd9dcdf, -3.3, -46, Math.PI],
+      [0x1c1c1e, -3.3, -60, Math.PI],
+      [0x2e4a3e, -3.3, 74, Math.PI],
+      [0xf2f2f2, -3.3, 88, Math.PI],
       [0x6f5a45, 3.0, -62, 0],
-      [0x4b5a78, 3.0, 82, 0],
     ];
     for (const [color, x, z, rot] of parked) {
       const car = this._createCar(color);
@@ -365,6 +410,10 @@ export class Vehicles {
   }
 
   update(time) {
+    const dt = this._lastTime === undefined ? 0 : Math.min(time - this._lastTime, 0.1);
+    this._lastTime = time;
+    this._updateSteam(dt);
+
     // Blink hazard lights
     for (const vehicle of this.vehicles) {
       if (vehicle.userData.hazards) {

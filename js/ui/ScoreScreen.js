@@ -16,8 +16,9 @@ const GRADE_STYLE = {
 };
 
 export class ScoreScreen {
-  constructor(scene, cameraRig, stateManager, scoringSystem) {
+  constructor(scene, cameraRig, stateManager, scoringSystem, viewManager) {
     this.scene = scene;
+    this.view = viewManager;
     this.cameraRig = cameraRig;
     this.stateManager = stateManager;
     this.scoringSystem = scoringSystem;
@@ -68,18 +69,8 @@ export class ScoreScreen {
     this.group.visible = true;
     this.retryInteractable.isInteractable = true;
 
-    // Position in front of player
-    const camWorldPos = new THREE.Vector3();
-    this.cameraRig.getWorldPosition(camWorldPos);
-    const camDir = new THREE.Vector3(0, 0, -1);
-    camDir.applyQuaternion(this.cameraRig.quaternion);
-
-    this.group.position.set(
-      camWorldPos.x + camDir.x * 2.5,
-      camWorldPos.y + 1.5,
-      camWorldPos.z + camDir.z * 2.5
-    );
-    this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
+    // Position in front of the viewer
+    this.view.placeUI(this.group, { distance: 2.5, height: -0.2, snap: true });
 
     this._render();
   }
@@ -193,8 +184,6 @@ export class ScoreScreen {
 
   update(dt) {
     if (!this.group.visible) return;
-    const camWorldPos = new THREE.Vector3();
-    this.cameraRig.getWorldPosition(camWorldPos);
-    this.group.lookAt(camWorldPos.x, this.group.position.y, camWorldPos.z);
+    this.view.placeUI(this.group, { distance: 2.5, height: -0.2, dt });
   }
 }
