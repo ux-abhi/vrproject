@@ -17,12 +17,12 @@
   "trailingSlash": true,
   "redirects": [
     {
-      "source": "/case-study/paper/:rest*",
+      "source": "/case-study/paper(/.*)?",
       "destination": "/paper/",
       "permanent": false
     },
     {
-      "source": "/case-study/:rest*",
+      "source": "/case-study(/.*)?",
       "destination": "/",
       "permanent": false
     }
