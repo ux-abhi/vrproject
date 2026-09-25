@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#020203">
+  <title>Who Does What? · Research Paper</title>
+  <meta name="description" content="Who Does What? Designing Collaboration Mechanics for Team-Based VR First Aid. Role Seeding, Explicit Delegation, and Task Switching and Handover, grounded in interviews with seven emergency professionals.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #020203;
+      --fg: #eceef1;
+      --muted: rgba(236, 238, 241, 0.66);
+      --faint: rgba(236, 238, 241, 0.38);
+      --line: rgba(255, 255, 255, 0.1);
+      --line-strong: rgba(255, 255, 255, 0.24);
+      --teal: #3fafa0;
+      --coral: #e8734a;
+      --purple: #8e7cc3;
+      --amber: #f2a44e;
+      --sans: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+      --serif: "Source Serif 4", Georgia, serif;
+      --gutter: clamp(16px, 5vw, 88px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    a { color: inherit; }
+
+    .nav {
+      position: sticky; top: 0; z-index: 10; height: 64px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 0 var(--gutter); border-bottom: 1px solid var(--line);
+      background: rgba(2, 2, 3, 0.86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    .nav .left, .nav .right { display: flex; gap: 10px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px;
+      border: 1px solid var(--line-strong); border-radius: 2px; font-size: 13.5px; color: var(--muted);
+      text-decoration: none; transition: color 0.2s, border-color 0.2s, background 0.2s; white-space: nowrap;
+    }
+    .btn:hover { color: var(--fg); border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.06); }
+    .btn:focus-visible, a:focus-visible { outline: 1px solid var(--fg); outline-offset: 3px; }
+    .btn.solid { color: var(--fg); background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04)); }
+    .progress { position: fixed; top: 63px; left: 0; height: 1px; width: 0; background: var(--fg); z-index: 11; }
+
+    .layout { display: grid; grid-template-columns: 220px minmax(0, 44rem); gap: clamp(24px, 5vw, 80px); padding: 64px var(--gutter) 120px; justify-content: center; }
+    .toc { position: sticky; top: 100px; align-self: start; font-size: 13px; }
+    .toc p { font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--faint); margin-bottom: 12px; }
+    .toc ol { list-style: none; display: grid; gap: 8px; }
+    .toc a { text-decoration: none; color: var(--faint); transition: color 0.2s; }
+    .toc a:hover, .toc a.on { color: var(--fg); }
+    .toc .sub { padding-left: 12px; }
+
+    header.title { margin-bottom: 48px; padding-bottom: 36px; border-bottom: 1px solid var(--line); }
+    .eyebrow { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; }
+    h1 { font-weight: 300; font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.028em; line-height: 1.08; }
+    .byline { margin-top: 18px; color: var(--muted); font-size: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+
+    article { font-family: var(--serif); font-size: 18px; line-height: 1.72; color: rgba(236, 238, 241, 0.86); }
+    article h2 { font-family: var(--sans); font-weight: 400; font-size: 24px; letter-spacing: -0.015em; color: var(--fg); margin: 56px 0 14px; scroll-margin-top: 90px; }
+    article h3 { font-family: var(--sans); font-weight: 500; font-size: 16px; color: var(--fg); margin: 32px 0 8px; scroll-margin-top: 90px; }
+    article p + p { margin-top: 14px; }
+    article ul { margin: 14px 0 14px 20px; }
+    article li + li { margin-top: 8px; }
+    article strong { font-weight: 600; color: var(--fg); }
+    .abstract { font-size: 17px; padding: 22px 24px; border: 1px solid var(--line); background: rgba(255,255,255,0.025); }
+    .abstract b { display: block; font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
+    .kw { font-family: var(--sans); font-size: 13px; color: var(--faint); margin-top: 16px; }
+    blockquote { margin: 18px 0; padding-left: 18px; border-left: 1px solid var(--purple); font-style: italic; color: var(--fg); }
+    blockquote cite { display: block; font-style: normal; font-family: var(--sans); font-size: 12px; letter-spacing: 0.16em; color: var(--purple); margin-top: 4px; }
+    .mech { border: 1px solid var(--line); padding: 18px 20px; margin: 16px 0; }
+    .mech .tag { font-family: var(--sans); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 13.5px; margin: 18px 0 8px; }
+    th, td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-weight: 500; color: var(--faint); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+    td:first-child { color: var(--purple); }
+    .caption { font-family: var(--sans); font-size: 12.5px; color: var(--faint); }
+    ol.refs { font-family: var(--sans); font-size: 13px; line-height: 1.55; color: var(--muted); margin-left: 22px; }
+    ol.refs li + li { margin-top: 10px; }
+    ol.refs a { color: var(--faint); word-break: break-all; }
+    .note { font-family: var(--sans); font-size: 13px; color: var(--faint); border-top: 1px solid var(--line); padding-top: 18px; margin-top: 48px; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(0, 1fr); padding-top: 36px; }
+      .toc { display: none; }
+      .nav .hide-sm { display: none; }
+      article { font-size: 17px; }
+      .table-wrap { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="left">
+      <a class="btn" href="https://uxabhi.com">← <span class="hide-sm">Back to portfolio</span></a>
+      <a class="btn" href="/case-study/">Case study</a>
+    </div>
+    <div class="right">
+      <a class="btn solid" href="/">Try the demo</a>
+    </div>
+  </header>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Contents">
+      <p>Contents</p>
+      <ol id="toc"></ol>
+    </nav>
+
+    <main>
+      <header class="title">
+        <p class="eyebrow">Research paper · Human-centred computing</p>
+        <h1>Who Does What? Designing Collaboration Mechanics for Team-Based VR First Aid</h1>
+        <p class="byline">Concept paper · Expert interviews (N=7) · Three collaboration mechanics</p>
+        <div class="actions">
+          <a class="btn solid" href="/case-study/">Read the visual case study</a>
+          <a class="btn" href="/">Try the WebXR prototype</a>
+        </div>
+      </header>
+
+      <article id="paper">
+        <div class="abstract">
+          <b>Abstract</b>
+          Virtual reality has established itself as an effective medium for first-aid training, yet existing systems are almost entirely single-user and procedural. Real road-accident emergencies, however, demand that bystander teams coordinate under pressure, a dimension that current training approaches entirely neglect. We designed a collaborative VR first-aid simulation grounded in the rescue-chain model and informed by semi-structured interviews with seven emergency professionals including paramedics, emergency physicians, firefighters, and first-aid instructors. Building on these expert insights, we contribute three collaboration mechanics: Role Seeding, which distributes asymmetric information so that task roles emerge from what each player can perceive rather than from explicit assignment; Explicit Delegation, which scaffolds structured communication acts combining pointing with verbal instruction; and Task Switching and Handover, which enables team-negotiated redistribution of tasks under mutual confirmation as scenario priorities evolve. We describe the design rationale for each mechanic, present the scenario structure, and outline open questions for formative evaluation.
+          <p class="kw"><b style="display:inline;letter-spacing:.16em">Keywords</b> virtual reality; first aid training; collaboration mechanics; bystander coordination; diffusion of responsibility; rescue chain; multi-user VR; emergency response; role seeding; explicit delegation.</p>
+        </div>
+
+        <h2 id="s1">1 Introduction</h2>
+        <h3 id="s1-1">1.1 The Bystander Teamwork Problem</h3>
+        <p>Road accidents rarely involve only one helper. When an emergency occurs on the road, multiple bystanders can arrive within minutes, before professional emergency medical services can reach the scene. Effective response in this window depends on coordinated team action: someone must call emergency services, someone must secure the scene, and someone must attend to the casualties. Yet first-aid courses train participants in isolation, treating the helper as a solo agent rather than as one node in an emergent team. The result is a familiar pattern: with multiple bystanders present and no explicit coordination, intervention is delayed or omitted entirely, a phenomenon long established as diffusion of responsibility. The question that determines whether help arrives in time is not what to do but <strong>who does what</strong>.</p>
+
+        <h3 id="s1-2">1.2 VR for First Aid: Established but Single-User</h3>
+        <p>Virtual reality has emerged as an effective medium for first-aid and emergency training. Recent work has shown that immersive VR scenarios improve procedural knowledge, self-efficacy, and transfer in first-aid contexts [3], and that VR-based training compares favourably to conventional methods even in high-stakes domains such as mass casualty preparation [6]. Where multi-user VR for emergency medicine has been explored, roles are typically pre-assigned and hardware-locked [11, 12]. Lay bystander teamwork remains outside the scope of these systems. Large-scale live disaster exercises already require one observer per key responder, making them resource-prohibitive at scale; as one expert noted, most ambulances arriving at a live drill get nothing from the exercise because they arrive late and are immediately dispatched again, and argued that VR replay across multiple camera perspectives could serve the same evaluative function with far fewer personnel.</p>
+
+        <h3 id="s1-3">1.3 The Gap: Collaboration Mechanics</h3>
+        <p>The CHI 2022 workshop on collaborative virtual training environments explicitly framed this absence, noting that “social and multi-user aspects for collaborative VTEs have received little investigation so far” [8]. Subsequent surveys of mixed-presence and multi-user mixed reality systems have catalogued recurring challenges around tracking, avatar fidelity, awareness cues, and safety in co-located VR, but few address the coordination layer itself: the mechanics by which untrained users can form, sustain, and renegotiate a team mid-task [5]. Mapped onto two axes, training context (procedural vs collaborative) and target population (professionals vs lay responders), existing VR first-aid systems cluster in the procedural-solo and procedural-professional cells [10, 11]. The collaborative-lay cell, where most real road-accident response actually happens, is empty [5]. As one expert stated plainly: “In first aid courses, teamwork is simply not practiced. Not at all.”</p>
+
+        <h3 id="s1-4">1.4 Our Contribution</h3>
+        <p>We address this gap by suggesting a concept of a collaborative VR first-aid simulation grounded in the rescue-chain model and informed by semi-structured interviews with seven emergency professionals (paramedics, emergency physicians, firefighters, and first-aid instructors). Building on these expert insights, we contribute three collaboration mechanics for team-based VR first-aid training:</p>
+        <ul>
+          <li><strong>Role Seeding:</strong> distributing complementary information and affordances at scenario start so that roles emerge through what each player can perceive and do, rather than through assignment.</li>
+          <li><strong>Explicit Delegation:</strong> scaffolding structured communication acts (point and verbal assignment) that translate awareness into coordinated action.</li>
+          <li><strong>Task Switching and Handover:</strong> enabling team-negotiated redistribution of tasks under mutual confirmation as priorities evolve.</li>
+        </ul>
+        <p>Unlike prior systems that pre-assign or hardware-lock roles, these mechanics let untrained bystander teams dynamically negotiate coordination. We describe the design rationale grounded in expert interviews, present the three mechanics in detail, and outline a planned formative evaluation [11, 12].</p>
+
+        <h2 id="s2">2 Related Work</h2>
+        <h3 id="s2-1">2.1 VR Applications for First Aid and Emergency Medical Training</h3>
+        <p>VR technology is increasingly recognised as a means of bridging the theory-practice gap in medical education, providing high-fidelity immersive simulations that facilitate knowledge acquisition and skills practice retained more effectively than traditional classroom instruction. Current systems are mostly focused on procedural skills such as CPR quality, wound bandaging, and mass casualty triage (SALT). An example is the game-style prototype “Peter’s First-Aid Adventure,” which successfully applies VR to choking and bleeding management through interactive tutorial and practice modules [7]. Although findings are promising, most first-aid VR applications treat learners as individuals and provide no affordances for collaborative behaviour [11, 12]. Existing professional-grade simulators designed for paramedics are built around pre-assigned, hardware-locked roles rather than addressing the specific coordination needs of untrained bystander teams. Our system uses expert knowledge of emergency coordination and the Rescue-Chain Model to train laypersons to act together as an emergent team of volunteer rescuers [10, 1].</p>
+
+        <h3 id="s2-2">2.2 Role Seeding: How Roles Emerge in Co-VR</h3>
+        <p>In real situations, the lack of a clear chain of command between bystanders usually results in diffusion of responsibility: no one helps because everyone assumes that someone else will step up [5]. Collaborative Virtual Training Environments for professional emergency services have largely addressed this by operating with pre-defined roles that reflect established hierarchies such as paramedic, driver, or physician [5]. However, existing work does not cover how roles can form naturally among untrained users without a force-fit of system-level assignments. We address this with Role Seeding, a mechanism based on asymmetric information distribution [6]. Distributed cognition theory holds that when information is spread unevenly across a team, role ownership emerges from each member’s unique epistemic position rather than from explicit assignment [15]. Environmental cues directed at individual players, such as a victim’s breathing status visible only to one player, operationalise this principle: each player’s information subset makes them the natural actor for the tasks only they can perceive, so roles emerge from what can be seen rather than from what has been prescribed. Empirical support for this design choice comes from a co-located asymmetric VR study in which information asymmetry compelled coordination in most cases, with players actively requesting actions from teammates based on information the other party could not access [16]. This helps limit diffusion of responsibility whilst maintaining agency at a team level in light of the inherently unpredictable behaviours within the rescue chain [5, 8].</p>
+
+        <h3 id="s2-3">2.3 Explicit Delegation: Structuring Communication for Action</h3>
+        <p>Effective emergency response depends on direct, actionable communication that transforms passive awareness into coordinated action [12]. A generic appeal to a group fails as a coordination act because it allows each bystander to assume that someone else will respond, leaving no individual accountable; only direct address to a named person with a specific task reliably converts a bystander into a responder [8].</p>
+
+        <h3 id="s2-4">2.4 Task Switching and Handover: Dynamic Redistribution Under Pressure</h3>
+        <p>Emergency scenes involve a chaotic phase in which priorities are in constant flux. Rescuers should be ready to switch responsibility after new victims are discovered or team members tire, such as after a sustained effort at CPR [5]. Our Task Switching and Handover mechanic addresses this by requiring bilateral confirmation before a role swap is executed between players. This mirrors the closed-loop standard described by one expert participant from professional emergency medicine: an action is only considered handed over once the receiving colleague has verbally confirmed it. A further reason bilateral confirmation matters among untrained bystanders is that when two people both want to lead, requiring mutual agreement makes redistribution a team decision rather than a contest [5, 6].</p>
+
+        <h2 id="s3">3 Design Rationale</h2>
+        <h3 id="s3-1">3.1 Expert-Informed Design</h3>
+        <p>To ground the concept development of the collaborative VR simulation in professional practice, we conducted semi-structured interviews with seven experts (N=7). We followed a Grounded Theory approach, utilising open, axial and selective coding to identify recurring concepts such as role confusion, diffusion of responsibility, and environmental stressors [13].</p>
+        <p><strong>Participants.</strong> Participants were recruited through purposive sampling targeting practitioners with direct experience of road accident response, emergency medical training, or first-aid instruction in Germany. Inclusion required at least two years of active field or instructional involvement from the medical and emergency response fields. The pool covered active paramedics, a fire service EMT, a first-aid training head, a disaster relief trainer, an emergency physician and instructor, and one community responder.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Role</th><th>Background</th><th>Experience</th></tr></thead>
+            <tbody>
+              <tr><td>P1</td><td>Community responder</td><td>Driver, no clinical role</td><td>Personal road emergency experience</td></tr>
+              <tr><td>P2</td><td>Emergency paramedic</td><td>12+ yrs, urban and rural</td><td>Active field duty, CPR, trauma</td></tr>
+              <tr><td>P3</td><td>Paramedic</td><td>12 yrs, city and rural</td><td>Accident scenes, field training</td></tr>
+              <tr><td>P4</td><td>Fire service trainee / EMT</td><td>3.5 yrs, emergency service and transport</td><td>Road accidents, patient transport</td></tr>
+              <tr><td>P5</td><td>Head of first-aid training</td><td>Training company since 2012, paramedic background</td><td>Course design, instructor training</td></tr>
+              <tr><td>P6</td><td>Disaster relief trainer</td><td>Paramedic, first-aid trainer</td><td>Public first-aid, medical services</td></tr>
+              <tr><td>P7</td><td>Emergency physician / instructor</td><td>Anaesthesiology, 5 yrs emergency medicine</td><td>ER, large-scale exercises, company courses</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="caption">Table 1. Interview participant profiles (N=7). Identifying details are omitted for this web version.</p>
+        <p><strong>Interview procedure.</strong> Interviews were conducted individually in a semi-structured format, lasting 30 to 60 minutes each. Sessions were audio-recorded with consent and transcribed verbatim. The guide covered five themes: the rescue chain; teamwork and role distribution in current training; limitations of classroom scenarios; VR potential and concerns; and feedback and learning success. All interviews opened with a rescue chain question before any VR framing was introduced, ensuring responses were grounded in field experience rather than technology novelty.</p>
+        <p><strong>Analysis.</strong> Transcripts were analysed using open, axial and selective coding following a Grounded Theory approach. Recurring categories included: role confusion and absent task ownership; diffusion of responsibility around the emergency call; environmental stressors as a training gap; haptic fidelity as a VR constraint; and debriefing structure as a retention determinant. Saturation was confirmed across all seven transcripts.</p>
+        <p>The synthesis of these interviews revealed several critical gaps in traditional first-aid training that informed the system requirements. Experts consistently highlighted that while laypeople are often taught procedural skills, they are rarely prepared for the chaotic phase of an emergency, namely the 8 to 12 minute window before professional help arrives, in which team coordination and prioritisation are as vital as medical knowledge. A recurring theme was diffusion of responsibility, particularly regarding the emergency call, which is often delayed because no single bystander feels explicitly tasked with it. Experts also noted that classroom settings lack the environmental stressors such as traffic noise, weather, or screaming that frequently cause tunnel vision or action paralysis in real-world responders.</p>
+        <blockquote>“You practice in a dry environment and you do not see what you do not see — in reality you arrive and you do not know the injury pattern.”<cite>P2</cite></blockquote>
+        <blockquote>“No one feels directly addressed — the emergency call gets pushed back and forth in a group.”<cite>P6</cite></blockquote>
+        <p>P5 noted that standard courses deliberately avoid complexity because the moment a learner feels overwhelmed, the willingness to act collapses, which is the very outcome training is meant to prevent. P3 described stress-induced tunnel vision as the core failure: bystanders at one accident kept trying to open a jammed door, failing to notice the other side was unlocked.</p>
+        <p>These insights directly informed the design scaffold, which uses the rescue chain (Secure, Call, First Aid, Handover) as a framework. Experts also emphasised the need for a graduated difficulty model to build action confidence without overwhelming the user, which led to the three-tier scenario design. They also identified multi-perspective replay as a specific affordance of VR, suggesting that reviewing team dynamics from a bird’s-eye view during debriefing is essential for internalising coordination skills.</p>
+
+        <h3 id="s3-2">3.2 The Three Collaboration Mechanics</h3>
+        <div class="mech">
+          <p class="tag" style="color: var(--teal)">Mechanic 1 · Role Seeding</p>
+          <p>At scenario start, the system distributes complementary information and affordances across players. For instance, one player sees the phone prompt while another sees the casualty’s breathing status. This asymmetric information structure reduces diffusion of responsibility by giving each player clear task ownership without explicit assignment. The core design decision was to use asymmetric information rather than role labels, so that roles emerge naturally from what each player can perceive and do.</p>
+          <blockquote>“You divide them among the individual vehicles.”<cite>P2, on multiple bystanders at a road accident</cite></blockquote>
+          <p>P4 confirmed the underlying principle: the person already doing CPR cannot also direct traffic, so roles emerge from physical positioning and immediate capacity rather than from any designated leader.</p>
+        </div>
+        <div class="mech">
+          <p class="tag" style="color: var(--purple)">Mechanic 2 · Explicit Delegation</p>
+          <p>Players can assign tasks to teammates by pointing and speaking, for example “You, call 112” or “You, stabilise the head.” This converts shared situational awareness into coordinated action and is grounded in real bystander intervention training. The combined voice and gesture act is tracked as a delegation event in the system log, providing data for post-session debriefing.</p>
+          <blockquote>“You have to point at someone and say: you, with the blue jacket, come here, press here — that is the only way it works.”<cite>P4</cite></blockquote>
+          <p>P6 confirmed that in freshly assembled teams verbal delegation is unavoidable; shared non-verbal cues only function in groups that have already trained together.</p>
+        </div>
+        <div class="mech">
+          <p class="tag" style="color: var(--coral)">Mechanic 3 · Task Switching and Handover</p>
+          <p>When priorities shift, for instance when a new casualty is found or a player performing CPR becomes fatigued, players can request or initiate a role swap. Handover requires mutual confirmation from both players before the switch takes effect, preventing accidental abandonment of a critical task and mirroring the closed-loop communication standards used in professional emergency medicine.</p>
+          <blockquote>“I give an instruction; the colleague confirms they received it and are executing it — without that confirmation the handover has not happened.”<cite>P7</cite></blockquote>
+        </div>
+
+        <h3 id="s3-3">3.3 Scenario Design</h3>
+        <p>The scenario is set at a road accident scene involving one to three casualties and two to three players. Complexity increases progressively across three tiers. In the easy level, one casualty is present and guided prompts support the team throughout. The medium level introduces two casualties with minimal system guidance. The extreme level involves three casualties, patient decompensation, and no guidance at all, placing full coordination responsibility on the team. The proposed system is conceptualised in Unity and designed to run on standalone VR head-mounted displays in a co-located multi-user configuration. Realism is calibrated per tier rather than fixed: P1 advocated for blood and chaos to sensitise participants, while P7 proposed separate programmes for lay and professional users, consistent with P5’s observation that even fake-blood images have been removed from public first-aid courses to protect willingness to act. P3 argued that VR could replicate environmental stressors such as noise, weather, and lighting variations at scale without the logistical cost of physical staging.</p>
+
+        <h2 id="s4">4 Design Implications and Open Questions</h2>
+        <p>Instead of focusing primarily on spatial analysis and interactivity, the design of collaboration mechanics for team-based VR first-aid training shifts focus to the “chaotic phase” in an emergency. Guided by expert testimony and Protection Motivation Theory (PMT), we draw implications for system design and pedagogical integration [2].</p>
+        <h3 id="s4-1">4.1 Design Hypotheses Regarding the Three Mechanics</h3>
+        <ul>
+          <li><strong>H1 (Role Seeding):</strong> Presenting non-uniform environmental cues to players will produce natural role differentiation without any system-level assignment, reducing diffusion of responsibility while preserving team agency.</li>
+          <li><strong>H2 (Explicit Delegation):</strong> Breaking delegation into a pointing gesture combined with a verbal command will support movement from passive awareness to cooperative action, because direct address transcends the threshold for overcoming inhibition in bystander intervention.</li>
+          <li><strong>H3 (Handover):</strong> Requiring explicit mutual confirmation before a role swap will prevent accidental task abandonment by making redistribution team-driven rather than system-directed, thereby upholding the closed-loop communication standards of professional emergency medicine.</li>
+        </ul>
+        <blockquote>“The moment participants feel they have a task that is theirs, the inhibition to act drops sharply — and that is precisely what asymmetric seeding is designed to trigger.”<cite>P5</cite></blockquote>
+        <h3 id="s4-2">4.2 Realism Calibrated as a Design Principle</h3>
+        <p>Within this system, realism is a controllable design variable informed by PMT. High stress components such as children crying are critical for professional stressor-reflex inoculation, but when designing for laypersons they must be mitigated to avoid maladaptive coping. The goal is to create just enough stress to alleviate minor inhibitions without triggering freezing in the learner.</p>
+        <blockquote>“Not everyone can see blood; for that person it could become traumatic.”<cite>P1</cite></blockquote>
+        <p>P7 proposed a tiered realism model: a low-intensity version for lay responders focused on overcoming inhibition, and a high-fidelity version for professionals requiring stressor-inoculation. P5 confirmed that public courses had already removed fake-blood images for this reason.</p>
+        <h3 id="s4-3">4.3 Challenges and Current Limitations</h3>
+        <p>We faced two main constraints while shaping the system. The most significant technical limitation is the absence of haptic fidelity: controllers allow for basic feedback such as a click reflecting CPR compression depth, but do not simulate the tactile sensation of wound bandaging or a Rautek rescue grip. Prior work has partially addressed this by digitally linking physical manikins to VR environments via time-of-flight sensors and hand-tracking gloves, providing real haptic resistance for compressions while the VR headset supplies the scenario context [17]; a controlled study further confirmed that participants training with a physical mannequin inside VR outperformed those without one on pressure-related skills [18]. P4 proposed combining physical sensor-equipped props with VR visuals to preserve the haptic dimension. Cybersickness remains a barrier to accessibility for some users. An ethical dimension also applies: participants with personal histories of road accidents may be at risk from realistic depictions, warranting clear trigger warnings and a simple opt-out mechanism for extreme stimuli. P6 added that setup time itself can block adoption in time-constrained courses.</p>
+        <h3 id="s4-4">4.4 Implications for First-Aid Course Design</h3>
+        <p>Current first-aid curricula focus on individual procedural skills while neglecting team coordination entirely. The collaboration mechanics presented here suggest that teamwork should be treated as a trainable skill with equal pedagogical standing to procedural competency, and that VR offers a viable platform for practising Crew Resource Management, a set of soft skills typically absent from traditional classroom settings. Used appropriately, VR augments rather than replaces specific physical hands-on training and offers a mobile platform to rehearse rare but high-stakes scenarios too expensive or hazardous to stage with actors.</p>
+        <blockquote>“Occupational first-aid courses benefit most from VR for scenarios that simply cannot be staged in reality.”<cite>P5</cite></blockquote>
+        <p>P6 identified a structural frequency problem: most of the population attends a first-aid course once and is never seen again, making VR the only scalable path to repeated practice. P7 identified multi-agency coordination between police and emergency services as a gap that live exercises address at most once every few years and that VR could turn into a routine drill. P1 added a boundary condition: participants need to feel they can pause or opt out at any point, otherwise the sense of control that the training is meant to build gets undermined before it starts.</p>
+
+        <h2 id="s5">5 Conclusion and Future Work</h2>
+        <h3 id="s5-1">5.1 Conclusion</h3>
+        <p>This paper presents the design and rationale of a collaborative VR first-aid simulation addressing the coordination failure modes that arise when untrained bystander teams respond to road emergencies. Grounded in expert interviews and informed by distributed cognition and team coordination research, we contribute three collaboration mechanics: Role Seeding, Explicit Delegation, and Task Switching and Handover. Together, these mechanics reframe the design problem for collaborative VR training from spatial interaction to coordination scaffolding. The critical competence gap in bystander first aid is not procedural knowledge but the ability to establish a shared division of labour under stress, and this competence can be trained through appropriately structured VR simulation. Viewing a bird’s-eye-view replay objectively during debriefing expands team self-reflection and situational awareness beyond what traditional feedback metrics can offer.</p>
+        <h3 id="s5-2">5.2 Future Work</h3>
+        <p>The immediate next step is a user study evaluating the three hypotheses from Section 4.1, comparing the full mechanics implementation against appropriate baselines. Beyond this, several directions are worth pursuing. Future work should aim for scientific evaluation frameworks to establish VR training as part of national curricula, for example in agencies such as the THW or organisations concerned with first-aid at work. The system should also include higher complexity scenarios and infrequent “Black Swan” events such as paediatric mass casualties or chemical exposures. Haptic and interaction fidelity remains one of the key areas for further development, to accurately duplicate tactile resistance in procedures such as the Rautek rescue grip or wound-pressure bandaging.</p>
+        <p>Testing adaptations to a mixed-presence model in which an instructor positioned outside the VR system can observe and debrief the team in real time would extend the system toward professional training contexts. Longitudinal outcome studies are needed that measure knowledge retention beyond the typical 2 to 6 month timepoint and establish a causal relationship between VR training and real-life patient outcomes. Finally, continued technical development to address cybersickness and accessibility will allow the interface to be tailored for more diverse populations including older learners and people with physical disabilities.</p>
+
+        <h2 id="refs">References</h2>
+        <ol class="refs">
+          <li>Abbas, J.R., et al. 2023. Virtual reality in simulation-based emergency skills training: A systematic review with a narrative synthesis. Resuscitation Plus 16, 100484. <a href="https://doi.org/10.1016/j.resplu.2023.100484">doi.org/10.1016/j.resplu.2023.100484</a></li>
+          <li>Chittaro, L. and Sioni, R. 2015. Serious games for emergency preparedness: Efficacy of an interactive vs. a non-interactive simulation of a terror attack. Computers in Human Behavior 50, 508–519. <a href="https://doi.org/10.1016/j.chb.2015.03.074">doi.org/10.1016/j.chb.2015.03.074</a></li>
+          <li>Kirchner, L.M. and Purucker, C. 2025. Erste-Hilfe-Training in Virtueller Realität: Effekte einer virtuellen Auffrischung auf Selbstwirksamkeit, Wissen und Transfer. Mensch und Computer 2025 – Workshopband. <a href="https://doi.org/10.18420/muc2025-mci-src-278">doi.org/10.18420/muc2025-mci-src-278</a></li>
+          <li>Kman, N.E., et al. 2023. First Responder Virtual Reality Simulator to train and assess emergency personnel for mass casualty response. JACEP Open 4, 1, e12903. <a href="https://doi.org/10.1002/emp2.12903">doi.org/10.1002/emp2.12903</a></li>
+          <li>Krug, K., Büschel, W., Satkowski, M., Gumhold, S., and Dachselt, R. 2026. Mixed Presence in Mixed Reality: Charting the Challenges and Opportunities. CHI 2026. <a href="https://doi.org/10.1145/3772318.3791508">doi.org/10.1145/3772318.3791508</a></li>
+          <li>Lochmannová, A. 2025. Exploring the role of virtual reality in preparing emergency responders for mass casualty incidents. Israel Journal of Health Policy Research 14. <a href="https://doi.org/10.1186/s13584-025-00681-9">doi.org/10.1186/s13584-025-00681-9</a></li>
+          <li>Rainer, A., et al. 2024. Development of Peter’s First-Aid Adventure VR-based serious game: Usability analysis of VR interaction tools. Procedia Computer Science 245, 309–319. <a href="https://doi.org/10.1016/j.procs.2024.10.256">doi.org/10.1016/j.procs.2024.10.256</a></li>
+          <li>Regal, G., et al. 2022. VR we are Training: Workshop on Collaborative Virtual Training for Challenging Contexts. CHI 2022 Extended Abstracts. <a href="https://doi.org/10.1145/3491101.3503710">doi.org/10.1145/3491101.3503710</a></li>
+          <li>Lee, L.K., et al. 2024. A Systematic Review of the Design of Serious Games for Innovative Learning: Augmented Reality, Virtual Reality, or Mixed Reality? Electronics 13, 890. <a href="https://doi.org/10.3390/electronics13050890">doi.org/10.3390/electronics13050890</a></li>
+          <li>Al-Hiyari, N.N. and Jusoh, S.S. 2021. Healthcare Training Application: 3D First Aid Virtual Reality. DATA 2021. ACM, 107–116. <a href="https://doi.org/10.1145/3460620.3460741">doi.org/10.1145/3460620.3460741</a></li>
+          <li>Li, Z., Wang, W., and Huang, Z.Z. 2025. Virtual reality for emergency medicine training on traffic accident injury treatment: a randomized controlled trial. Frontiers in Virtual Reality 6:1518016. <a href="https://doi.org/10.3389/frvir.2025.1518016">doi.org/10.3389/frvir.2025.1518016</a></li>
+          <li>Li, Z., et al. 2025. Instructor-led VR training in medical emergency rescue education for road traffic accidents: a questionnaire-based study. Scientific Reports 15, 29558. <a href="https://doi.org/10.1038/s41598-025-15258-4">doi.org/10.1038/s41598-025-15258-4</a></li>
+          <li>Kou, Y. and Gray, C.M. 2019. A Practice-Led Account of the Conceptual Evolution of UX Knowledge. CHI 2019. <a href="https://doi.org/10.1145/3290605.3300279">doi.org/10.1145/3290605.3300279</a></li>
+          <li>Feng, Z., et al. 2018. Immersive virtual reality serious games for evacuation training and research: A systematic literature review. Computers and Education 127, 252–266. <a href="https://doi.org/10.1016/j.compedu.2018.09.002">doi.org/10.1016/j.compedu.2018.09.002</a></li>
+          <li>Hollan, J., Hutchins, E., and Kirsh, D. 2000. Distributed cognition: toward a new foundation for human-computer interaction research. ACM TOCHI 7, 2, 174–196. <a href="https://doi.org/10.1145/353485.353487">doi.org/10.1145/353485.353487</a></li>
+          <li>Paraschivoiu, I., et al. 2026. Where’s the Team Spirit? An Exploratory Study on Team Development Through Co-located Tablet-Based VR. arXiv:2605.03127. <a href="https://doi.org/10.48550/arXiv.2605.03127">doi.org/10.48550/arXiv.2605.03127</a></li>
+          <li>Gent, L., et al. 2019. Successful Virtual Reality Cardiopulmonary Resuscitation Training in Schools: Digitally Linking a Physical Manikin to a Virtual Lifesaving Scenario. Circulation 140, Suppl. 2, Abstract 396. <a href="https://doi.org/10.1161/circ.140.suppl_2.396">doi.org/10.1161/circ.140.suppl_2.396</a></li>
+          <li>Chittaro, L. and Buttussi, F. 2020. A virtual reality methodology for cardiopulmonary resuscitation training with and without a physical mannequin. Journal of Biomedical Informatics 111, 103590. <a href="https://doi.org/10.1016/j.jbi.2020.103590">doi.org/10.1016/j.jbi.2020.103590</a></li>
+        </ol>
+        <p class="note">Web version of the paper. Participant details are reduced to role and experience to protect anonymity.</p>
+      </article>
+    </main>
+  </div>
+
+  <script>
+    // Contents list from the headings, with the current section highlighted
+    const toc = document.getElementById('toc');
+    const heads = [...document.querySelectorAll('#paper h2, #paper h3')];
+    toc.innerHTML = heads.map((h) => `<li class="${h.tagName === 'H3' ? 'sub' : ''}"><a href="#${h.id}">${h.textContent}</a></li>`).join('');
+    const links = [...toc.querySelectorAll('a')];
+    const bar = document.getElementById('progress');
+    const onScroll = () => {
+      let cur = 0;
+      heads.forEach((h, i) => { if (h.getBoundingClientRect().top < 140) cur = i; });
+      links.forEach((a, i) => a.classList.toggle('on', i === cur));
+      const max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.width = `${(scrollY / Math.max(1, max)) * 100}%`;
+    };
+    addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  </script>
+</body>
+</html>
