@@ -244,37 +244,63 @@ export const FORMATIONS = {
   },
 
   // Act II: the rescue chain as four interlocking links
-  chain: {
-    fill: 0.72,
-    tint: C.teal,
-    layers: [
-      L(S.ring(-4.35, -0.4, 1.5, 0.85, 0.07), 0.14, C.teal, { soft: 0.6, volume: 0.2 }),
-      L(S.ring(-1.45, -0.4, 1.5, 0.22, 0.07), 0.08, C.purple, { soft: 0.6, volume: 0.2 }),
-      L(S.ring(1.45, -0.4, 1.5, 0.85, 0.07), 0.14, C.coral, { soft: 0.6, volume: 0.2 }),
-      L(S.ring(4.35, -0.4, 1.5, 0.22, 0.07), 0.08, C.white, { soft: 0.6, volume: 0.2 }),
-      L(S.warningTriangle(-4.35, 1.1, 0.75), 0.05, C.teal, { soft: 1 }),
-      L([S.phone(-1.45, 1.55, 0.8), S.signal(-1.45, 1.55, 0.8)], 0.06, C.purple, { soft: 1 }),
-      L(S.heart(1.45, 1.5, 0.55), 0.05, C.coral, { soft: 1.2 }),
-      L(S.ambulance(4.35, 1.05, 1.5), 0.06, C.white, { soft: 0.8 }),
-    ],
-    anchors: { l0: [-4.35, -1.6], l1: [-1.45, -1.6], l2: [1.45, -1.6], l3: [4.35, -1.6] },
-  },
+  chain: (() => {
+    // Four ordered stations, then the same phases laid on a 0–12 minute axis
+    const X = [-4.5, -1.5, 1.5, 4.5];
+    const Y = 0.1;
+    const COL = [C.teal, C.purple, C.coral, C.white];
+    const T = (m) => -5.6 + m * (11.2 / 12);
+    const AY = -2.35;
+    const layers = [
+      L(S.path([[X[0], Y], [X[3], Y]], 0.02), 0.05, C.white, { alpha: 0.35, size: 0.7, soft: 0.3 }),
+      ...X.slice(0, 3).map((x) => L(S.path([[x + 1.38, Y + 0.16], [x + 1.55, Y], [x + 1.38, Y - 0.16]], 0.03), 0.012, C.white, { alpha: 0.7, soft: 0.3 })),
+      ...X.map((x, i) => L([S.disc(x, Y, 0.1), S.ring(x, Y, 0.3, 0.3, 0.025)], 0.05, COL[i], { size: 0.9, soft: 0.3 })),
+      L(S.warningTriangle(X[0], 1.35, 0.7), 0.05, C.teal, { soft: 0.8 }),
+      L([S.phone(X[1], 1.4, 0.75), S.signal(X[1], 1.4, 0.75)], 0.06, C.purple, { soft: 0.8 }),
+      L(S.heart(X[2], 1.35, 0.5), 0.05, C.coral, { soft: 1 }),
+      L(S.ambulance(X[3], 1.2, 1.35), 0.06, C.white, { soft: 0.7 }),
+      // Time axis: each phase in its colour, ambulance window dashed
+      ...[[0, 1], [1, 2], [2, 10], [10, 12]].map(([m0, m1], i) =>
+        L(S.path([[T(m0) + 0.04, AY], [T(m1) - 0.04, AY]], 0.035), 0.03 + (m1 - m0) * 0.004, COL[i], { size: 0.8, soft: 0.2 })),
+      L(S.path([[T(8), AY + 0.42], [T(12), AY + 0.42]], 0.02, [0.07, 0.09]), 0.015, C.amber, { alpha: 0.8, size: 0.7, soft: 0.3 }),
+      L(S.path([[T(0), AY + 0.42], [T(8), AY + 0.42]], 0.015), 0.02, C.white, { alpha: 0.3, size: 0.6, soft: 0.3 }),
+      ...Array.from({ length: 13 }, (_, m) => L(S.path([[T(m), AY - 0.07], [T(m), AY - (m % 4 === 0 ? 0.2 : 0.12)]], 0.015), 0.003, C.white, { alpha: 0.5, size: 0.6 })),
+    ];
+    return {
+      fill: 0.72,
+      tint: C.teal,
+      layers,
+      anchors: {
+        ...Object.fromEntries(X.map((x, i) => [`l${i}`, [x, Y - 0.42]])),
+        t0: [T(0), AY - 0.3], t12: [T(12), AY - 0.3],
+        alone: [T(4), AY + 0.5], amb: [T(10), AY + 0.5],
+      },
+    };
+  })(),
 
   // Act III: one picture per interview question
-  q1: {
-    fill: 0.7,
-    tint: C.teal,
-    layers: [
-      L(S.ring(-3.3, 1.35, 1.0, 0.56, 0.05), 0.07, C.teal, { soft: 0.5 }),
-      L(S.ring(-1.1, 1.35, 1.0, 0.16, 0.05), 0.04, C.purple, { soft: 0.5 }),
-      L(S.ring(1.1, 1.35, 1.0, 0.56, 0.05), 0.07, C.coral, { soft: 0.5 }),
-      L(S.ring(3.3, 1.35, 1.0, 0.16, 0.05), 0.04, C.white, { soft: 0.5 }),
-      L3(person('walk', -3.3, 2.3, C.teal, { yaw: 0.4 }), 0.2, {}),
-      L3(person('phone', 0, 2.3, C.purple, { yaw: 0 }), 0.2, {}),
-      L3(person('reach', 3.0, 2.3, C.coral, { yaw: -0.5 }), 0.2, {}),
-      ground(),
-    ],
-  },
+  q1: (() => {
+    // The same chain, split between people: each one owns a station
+    const X = [-3.6, -1.2, 1.2, 3.6];
+    const Y = 1.75;
+    const COL = [C.teal, C.purple, C.coral, C.white];
+    return {
+      fill: 0.7,
+      tint: C.teal,
+      layers: [
+        L(S.path([[X[0], Y], [X[3], Y]], 0.02), 0.04, C.white, { alpha: 0.35, size: 0.7, soft: 0.3 }),
+        ...X.map((x, i) => L([S.disc(x, Y, 0.09), S.ring(x, Y, 0.26, 0.26, 0.022, i === 3 ? [0.05, 0.07] : null)], 0.04, COL[i], { size: 0.9, soft: 0.3, ...(i === 3 ? { alpha: 0.6 } : {}) })),
+        ...X.slice(0, 3).map((x, i) => L(S.path([[x, Y - 0.34], [x, 0.05]], 0.018, [0.06, 0.08]), 0.02, COL[i], { alpha: 0.8, size: 0.7, soft: 0.3 })),
+        L3(person('walk', X[0], 2.3, C.teal, { yaw: 0.4 }), 0.19, {}),
+        L3(person('phone', X[1], 2.3, C.purple, { yaw: 0 }), 0.19, {}),
+        L3(person('reach', X[2], 2.3, C.coral, { yaw: -0.5 }), 0.19, {}),
+        L(S.path([[X[3], Y - 0.34], [X[3], -1.2]], 0.015, [0.05, 0.1]), 0.012, C.white, { alpha: 0.45, size: 0.6, soft: 0.3 }),
+        L(S.ambulance(X[3] + 0.2, -1.95, 1.5), 0.07, C.white, { ...CONCEPT, alpha: 0.55, drift: 0.05, soft: 0.6 }),
+        ground(),
+      ],
+      anchors: Object.fromEntries(X.map((x, i) => [`p${i}`, [x, Y + 0.42]])),
+    };
+  })(),
   q2: {
     fill: 0.66,
     tint: C.purple,

@@ -188,8 +188,27 @@ function buildHotspots() {
   addHotspot('window', H.window.anchors.group, label('Everyone waits for someone else'), 'var(--faint)');
 
   // Act II: the rescue chain
-  ['Secure', 'Call', 'First aid', 'Hand over'].forEach((t, i) =>
-    addHotspot('chain', H.chain.anchors[`l${i}`], label(t), ['var(--teal)', 'var(--purple)', 'var(--coral)', 'var(--fg)'][i]));
+  const CHAIN_COL = ['var(--teal)', 'var(--purple)', 'var(--coral)', 'var(--fg)'];
+  [
+    ['Secure', 'Hazard lights, vest, triangle'],
+    ['Call 112', 'Where, what, how many, injuries'],
+    ['First aid', 'Breathing, recovery position, CPR'],
+    ['Hand over', 'Brief the crew on what happened'],
+  ].forEach(([t, d], i) => {
+    const el = document.createElement('span');
+    el.className = 'station';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = `<span class="num">0${i + 1}</span><span class="ttl">${t}</span><span class="sub">${d}</span>`;
+    addHotspot('chain', H.chain.anchors[`l${i}`], el, CHAIN_COL[i]);
+  });
+  const tick = (t) => { const el = label(t); el.classList.add('tick'); return el; };
+  addHotspot('chain', H.chain.anchors.t0, tick('0 min · crash'), 'var(--faint)');
+  addHotspot('chain', H.chain.anchors.t12, tick('12 min'), 'var(--faint)');
+  const above = (t) => { const el = label(t); el.classList.add('above'); return el; };
+  addHotspot('chain', H.chain.anchors.alone, above('Bystanders on their own'), 'var(--muted)');
+  addHotspot('chain', H.chain.anchors.amb, above('Ambulance 8–12 min'), 'var(--amber)');
+  ['One secures', 'One calls', 'One treats', 'Crew takes over'].forEach((t, i) =>
+    addHotspot('q1', H.q1.anchors[`p${i}`], Object.assign(label(t), { className: 'wide-only' }), CHAIN_COL[i]));
 
   // Act III: question pictures
   addHotspot('q2', H.q2.anchors.alone, label('Trained alone, on a dummy'), 'var(--amber)');
