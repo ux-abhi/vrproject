@@ -11,7 +11,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 //  - "Shvan '92 Ambulance" by Daniel Zhabotinsky, CC BY 4.0
 //  - "Administering CPR curso XR" by xcampos91, CC BY 4.0
 const BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r170/examples/models/gltf/';
-const BAKED = '/case-study/models/baked/';
+const BAKED = '/models/baked/';
 
 // Baked format: Uint32 count | Float32 w,h,d | Int16 xyz | Int8 normal xyz | Uint8 albedo
 async function loadBaked(name) {

@@ -5,9 +5,9 @@
 // Leave a link empty and the page shows it as "coming soon".
 
 export const LINKS = {
-  demo: '/',
-  paper: '/case-study/paper/',
-  paperPdf: '',      // e.g. '/case-study/paper/who-does-what.pdf' once the PDF is added
+  demo: '/demo/',
+  paper: '/paper/',
+  paperPdf: '',      // e.g. '/paper/who-does-what.pdf' once the PDF is added
   video: '',
   portfolio: 'https://uxabhi.com',
 };

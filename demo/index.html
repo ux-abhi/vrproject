@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>VR First Aid Training</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23FF453A'/%3E%3Cpath d='M26 14h12v12h12v12H38v12H26V38H14V26h12z' fill='white'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #000;
+      --label: #f5f5f7;
+      --secondary: rgba(235, 235, 245, 0.62);
+      --tertiary: rgba(235, 235, 245, 0.34);
+      --glass: rgba(28, 28, 30, 0.62);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --fill: rgba(118, 118, 128, 0.24);
+      --blue: #0a84ff;
+      --green: #30d158;
+      --orange: #ff9f0a;
+      --red: #ff453a;
+      --yellow: #ffd60a;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
+      --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--label);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+    }
+
+    #app canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Start screen ─────────────────────────────────────────── */
+
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      overflow-y: auto;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      padding: max(32px, env(safe-area-inset-top)) 16px 32px;
+    }
+
+    #loading-overlay .aurora {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(60vmax 40vmax at 15% 10%, rgba(255, 69, 58, 0.28), transparent 60%),
+        radial-gradient(50vmax 40vmax at 90% 20%, rgba(255, 159, 10, 0.2), transparent 60%),
+        radial-gradient(60vmax 50vmax at 50% 110%, rgba(10, 132, 255, 0.25), transparent 60%);
+      filter: blur(20px);
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+      from { transform: translate3d(0, 0, 0) scale(1); }
+      to { transform: translate3d(0, -2%, 0) scale(1.06); }
+    }
+
+    .sheet {
+      position: relative;
+      width: 100%;
+      max-width: 880px;
+      margin: auto 0;
+      text-align: center;
+      animation: rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--secondary);
+      padding: 6px 14px 6px 10px;
+      border-radius: 999px;
+      background: var(--fill);
+      border: 1px solid var(--glass-border);
+      margin-bottom: 22px;
+    }
+
+    .eyebrow .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.25);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      50% { box-shadow: 0 0 0 7px rgba(255, 69, 58, 0); }
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 6.5vw, 4.2rem);
+      line-height: 1.04;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      margin-bottom: 20px;
+    }
+
+    h1 .grad {
+      background: linear-gradient(95deg, #ff6a5c 0%, #ff9f0a 45%, #ffd60a 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lede {
+      font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+      line-height: 1.45;
+      color: var(--secondary);
+      max-width: 620px;
+      margin: 0 auto 30px;
+      font-weight: 500;
+    }
+
+    .card {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 24px 26px;
+      text-align: left;
+      -webkit-backdrop-filter: saturate(180%) blur(30px);
+      backdrop-filter: saturate(180%) blur(30px);
+      box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .scenario {
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--tertiary);
+      margin-bottom: 14px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--fill);
+      color: var(--label);
+    }
+
+    .chip.green { background: rgba(48, 209, 88, 0.16); color: var(--green); }
+    .chip.blue { background: rgba(10, 132, 255, 0.18); color: #64b5ff; }
+
+    .scenario p {
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--secondary);
+    }
+
+    .scenario p strong {
+      color: var(--label);
+      font-weight: 600;
+    }
+
+    .chain {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+      list-style: none;
+    }
+
+    .chain li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(118, 118, 128, 0.14);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .chain li small {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--tertiary);
+      margin-top: 2px;
+    }
+
+    .chain .badge {
+      flex: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .controls ul {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .controls li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 15px;
+      color: var(--secondary);
+    }
+
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--label);
+    }
+
+    .keys {
+      display: inline-flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    #start-button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--blue);
+      padding: 16px 40px;
+      border-radius: 999px;
+      box-shadow: 0 10px 30px -8px rgba(10, 132, 255, 0.7);
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, background 0.2s;
+    }
+
+    #start-button:hover {
+      background: #339cff;
+      transform: scale(1.03);
+      box-shadow: 0 14px 40px -8px rgba(10, 132, 255, 0.85);
+    }
+
+    #start-button:active {
+      transform: scale(0.98);
+    }
+
+    #start-button:focus-visible {
+      outline: 3px solid rgba(10, 132, 255, 0.5);
+      outline-offset: 4px;
+    }
+
+    .vr-note {
+      margin-top: 18px;
+      font-size: 13px;
+      color: var(--tertiary);
+    }
+
+    @media (max-width: 640px) {
+      .chain, .controls { grid-template-columns: 1fr; }
+      .card { padding: 22px; border-radius: 24px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .aurora, .sheet, .eyebrow .dot { animation: none; }
+    }
+
+    /* ── In-session chrome ────────────────────────────────────── */
+
+    /* VRButton override styles */
+    #VRButton {
+      position: fixed !important;
+      bottom: 24px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: auto !important;
+      padding: 12px 24px !important;
+      border-radius: 999px !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      background: rgba(28, 28, 30, 0.72) !important;
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      font: 600 14px var(--font) !important;
+      letter-spacing: 0.01em;
+      opacity: 1 !important;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Desktop instructions overlay */
+    #desktop-controls-hint {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(28, 28, 30, 0.72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--secondary);
+      pointer-events: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    #desktop-controls-hint kbd {
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    #desktop-controls-hint .sep {
+      width: 1px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    #desktop-controls-hint .top-only { display: none; }
+    #desktop-controls-hint[data-view="top"] .top-only { display: inline; }
+
+    @media (max-width: 640px) {
+      #desktop-controls-hint { display: none; }
+    }
+
+    /* ── Start screen: mode + role pickers ─────────────────────── */
+
+    .setup { margin-bottom: 16px; }
+
+    .segmented {
+      display: inline-grid;
+      grid-auto-flow: column;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 14px;
+      background: var(--fill);
+      margin-bottom: 14px;
+    }
+
+    .segmented label {
+      position: relative;
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--secondary);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+    .segmented label:has(input:checked) { background: rgba(255, 255, 255, 0.16); color: var(--label); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .segmented label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+    .setup .hint { font-size: 14px; color: var(--tertiary); line-height: 1.5; }
+
+    .roles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .roles[hidden] { display: none; }
+
+    .role {
+      position: relative;
+      display: block;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(118, 118, 128, 0.14);
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .role input { position: absolute; opacity: 0; pointer-events: none; }
+    .role:has(input:checked) { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+    .role:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .role strong { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+    .role strong::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+    .role small { display: block; margin-top: 4px; font-size: 12px; color: var(--tertiary); line-height: 1.4; }
+
+    @media (max-width: 640px) {
+      .roles { grid-template-columns: 1fr; }
+    }
+
+    /* ── In-session toolbar, roster, exit sheet ─────────────────── */
+
+    .glass {
+      background: rgba(28, 28, 30, 0.72);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+    }
+
+    #toolbar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 200;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    #toolbar[hidden] { display: none; }
+
+    .tb-group {
+      display: flex;
+      gap: 2px;
+      padding: 4px;
+      border-radius: 999px;
+    }
+
+    .tb-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--secondary);
+      font: 600 13px var(--font);
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tb-btn:hover { color: var(--label); background: rgba(255,255,255,0.08); }
+    .tb-btn[aria-pressed="true"] { background: rgba(255, 255, 255, 0.18); color: var(--label); }
+    .tb-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .tb-btn.exit { color: var(--red); }
+    .tb-btn[hidden] { display: none; }
+    .tb-btn kbd { min-width: 18px; height: 18px; font-size: 10px; padding: 0 4px; border-radius: 5px; }
+
+    .menu-wrap { position: relative; }
+
+    #role-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      min-width: 250px;
+      padding: 6px;
+      border-radius: 16px;
+      display: grid;
+      gap: 2px;
+    }
+
+    #role-menu[hidden] { display: none; }
+
+    #role-menu button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      color: var(--label);
+      font: 600 14px var(--font);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 12px 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #role-menu button:hover { background: rgba(255,255,255,0.08); }
+    #role-menu button small { grid-column: 2; font-weight: 500; font-size: 12px; color: var(--tertiary); }
+    #role-menu .dot { width: 10px; height: 10px; border-radius: 50%; grid-row: span 2; }
+    #role-menu button[aria-checked="true"]::after { content: "✓"; color: var(--blue); grid-row: 1; grid-column: 3; }
+
+    #team-roster {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 200;
+      list-style: none;
+      padding: 8px;
+      border-radius: 18px;
+      display: grid;
+      gap: 2px;
+      min-width: 200px;
+    }
+
+    #team-roster[hidden] { display: none; }
+
+    #team-roster li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+
+    #team-roster li.active { background: rgba(255,255,255,0.08); }
+    #team-roster .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+    #team-roster .who { font-weight: 700; }
+    #team-roster .what { color: var(--secondary); flex: 1; }
+    #team-roster .now { font-size: 11px; font-weight: 700; color: var(--green); }
+
+    #exit-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 16px;
+    }
+
+    #exit-sheet[hidden] { display: none; }
+
+    #exit-sheet .alert {
+      width: min(320px, 100%);
+      border-radius: 18px;
+      overflow: hidden;
+      text-align: center;
+      animation: rise 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    #exit-sheet .alert h2 { font-size: 17px; font-weight: 700; padding: 20px 20px 4px; }
+    #exit-sheet .alert p { font-size: 13px; color: var(--secondary); padding: 0 20px 18px; line-height: 1.45; }
+    #exit-sheet .actions { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid rgba(255,255,255,0.12); }
+
+    #exit-sheet .actions button {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      font: 17px var(--font);
+      padding: 13px;
+      color: var(--blue);
+      cursor: pointer;
+    }
+
+    #exit-sheet .actions button + button { border-left: 1px solid rgba(255,255,255,0.12); color: var(--red); font-weight: 600; }
+    #exit-sheet .actions button:hover { background: rgba(255,255,255,0.06); }
+  </style>
+
+  <!-- Polyfill for CanvasRenderingContext2D.roundRect -->
+  <script>
+  if (typeof CanvasRenderingContext2D !== 'undefined' &&
+      !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+      const r = typeof radii === 'number' ? radii : (Array.isArray(radii) ? radii[0] : 0);
+      this.moveTo(x + r, y);
+      this.arcTo(x + w, y, x + w, y + h, r);
+      this.arcTo(x + w, y + h, x, y + h, r);
+      this.arcTo(x, y + h, x, y, r);
+      this.arcTo(x, y, x + w, y, r);
+      this.closePath();
+    };
+  }
+  </script>
+
+  <!-- ES Module Shims for older browsers -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Loading / Start Screen -->
+  <div id="loading-overlay">
+    <div class="aurora" aria-hidden="true"></div>
+
+    <main class="sheet">
+      <span class="eyebrow"><span class="dot"></span>WebXR Training Simulation</span>
+
+      <h1>First aid,<br><span class="grad">when it matters.</span></h1>
+      <p class="lede">Learn the Chain of Rescue at a real-world road accident, on your desktop or in a VR headset.</p>
+
+      <section class="card scenario" aria-labelledby="brief-title">
+        <h2 id="brief-title">Scenario briefing</h2>
+        <div class="chips">
+          <span class="chip green">Easy</span>
+          <span class="chip blue">Solo or team</span>
+          <span class="chip">Urban road · Daylight</span>
+        </div>
+        <p>
+          A <strong>minor rear-end collision</strong> has happened on an urban road in broad daylight.
+          One person appears dazed but conscious. Follow the <strong>Chain of Rescue</strong>:
+          secure the scene, call 112, and approach the victim safely.
+        </p>
+        <ol class="chain">
+          <li><span class="badge" style="background: var(--orange)">1</span><span>Secure the scene<small>Vest and warning triangle</small></span></li>
+          <li><span class="badge" style="background: var(--green)">2</span><span>Call 112<small>Answer the five W-questions</small></span></li>
+          <li><span class="badge" style="background: var(--blue)">3</span><span>Reach the patient<small>Approach once it is safe</small></span></li>
+        </ol>
+      </section>
+
+      <section class="card setup" aria-labelledby="mode-title">
+        <h2 id="mode-title">How do you want to train?</h2>
+        <div class="segmented" role="radiogroup" aria-label="Mode">
+          <label><input type="radio" name="mode" value="solo" checked>Solo</label>
+          <label><input type="radio" name="mode" value="team">Team with AI</label>
+        </div>
+        <p class="hint" id="mode-hint">You handle every step of the rescue yourself.</p>
+        <div class="roles" id="role-picker" role="radiogroup" aria-label="Your role" hidden>
+          <label class="role" style="--c: var(--orange)"><input type="radio" name="role" value="scene" checked><strong>Scene</strong><small>Vest and warning triangle. Sees traffic hazards.</small></label>
+          <label class="role" style="--c: var(--blue)"><input type="radio" name="role" value="people"><strong>Lead</strong><small>Leads the team and makes the 112 call.</small></label>
+          <label class="role" style="--c: var(--green)"><input type="radio" name="role" value="medical"><strong>Medical</strong><small>Checks the patient once safe. Sees vitals.</small></label>
+        </div>
+      </section>
+
+      <div class="controls">
+        <section class="card" aria-labelledby="desk-title">
+          <h2 id="desk-title">Desktop</h2>
+          <ul>
+            <li>Move <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></li>
+            <li>Look around <span class="keys"><kbd>Right-drag</kbd><kbd>Q</kbd><kbd>E</kbd></span></li>
+            <li>Interact / walk to <span class="keys"><kbd>Left-click</kbd></span></li>
+            <li>Immersive / top view <span class="keys"><kbd>V</kbd></span></li>
+          </ul>
+        </section>
+        <section class="card" aria-labelledby="vr-title">
+          <h2 id="vr-title">VR headset</h2>
+          <ul>
+            <li>Select / teleport <span class="keys"><kbd>Trigger</kbd></span></li>
+            <li>Grab objects <span class="keys"><kbd>Grip</kbd></span></li>
+            <li>Turn <span class="keys"><kbd>Thumbstick ◀ ▶</kbd></span></li>
+            <li>Switch role / exit <span class="keys"><kbd>HUD buttons</kbd></span></li>
+          </ul>
+        </section>
+      </div>
+
+      <button id="start-button">Begin Training</button>
+      <p class="vr-note">Using a headset? Choose “Enter VR” after starting.</p>
+      <p class="vr-note"><a href="/" style="color: var(--secondary)">Read the case study behind this prototype →</a></p>
+    </main>
+  </div>
+
+  <!-- Desktop controls hint (visible during gameplay) -->
+  <div id="desktop-controls-hint">
+    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</span>
+    <span class="sep"></span>
+    <span><kbd>Right-drag</kbd> Look</span>
+    <span class="sep"></span>
+    <span><kbd>Click</kbd> Interact</span>
+    <span class="sep"></span>
+    <span><kbd>V</kbd> View</span>
+    <span class="top-only">&nbsp;<kbd>Scroll</kbd> Zoom</span>
+  </div>
+
+  <!-- Session toolbar -->
+  <div id="toolbar" hidden>
+    <div class="tb-group glass" role="group" aria-label="View">
+      <button class="tb-btn" data-view="immersive" aria-pressed="true">Immersive</button>
+      <button class="tb-btn" data-view="top" aria-pressed="false">Top view</button>
+    </div>
+    <div class="menu-wrap">
+      <div class="tb-group glass">
+        <button class="tb-btn" id="role-button" aria-haspopup="true" aria-expanded="false" hidden>Switch role</button>
+        <button class="tb-btn exit" id="exit-button">Exit <kbd>Esc</kbd></button>
+      </div>
+      <div id="role-menu" class="glass" role="menu" hidden>
+        <button role="menuitemradio" data-role="scene" aria-checked="false"><span class="dot" style="background: var(--orange)"></span>Scene management<small>Vest, triangle, hazards</small></button>
+        <button role="menuitemradio" data-role="people" aria-checked="false"><span class="dot" style="background: var(--blue)"></span>People management<small>Lead, 112 call</small></button>
+        <button role="menuitemradio" data-role="medical" aria-checked="false"><span class="dot" style="background: var(--green)"></span>Medical management<small>Patient, vitals</small></button>
+      </div>
+    </div>
+  </div>
+
+  <ul id="team-roster" class="glass" aria-label="Team" hidden></ul>
+
+  <div id="exit-sheet" hidden>
+    <div class="alert glass" role="alertdialog" aria-labelledby="exit-title" aria-describedby="exit-desc">
+      <h2 id="exit-title">End training?</h2>
+      <p id="exit-desc">Your progress in this run will be lost and you'll return to the start screen.</p>
+      <div class="actions">
+        <button id="exit-cancel">Cancel</button>
+        <button id="exit-confirm">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Start screen: show the role picker only for team mode
+    document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => {
+      const team = document.querySelector('input[name="mode"]:checked').value === 'team';
+      document.getElementById('role-picker').hidden = !team;
+      document.getElementById('mode-hint').textContent = team
+        ? 'Pick your role. Two AI teammates take the others, and you can switch role at any time.'
+        : 'You handle every step of the rescue yourself.';
+    }));
+  </script>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

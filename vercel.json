@@ -13,5 +13,18 @@
         }
       ]
     }
+  ],
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/case-study/paper/:rest*",
+      "destination": "/paper/",
+      "permanent": false
+    },
+    {
+      "source": "/case-study/:rest*",
+      "destination": "/",
+      "permanent": false
+    }
   ]
 }
