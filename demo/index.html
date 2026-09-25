@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#050607">
   <title>VR First Aid Training</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23FF453A'/%3E%3Cpath d='M26 14h12v12h12v12H38v12H26V38H14V26h12z' fill='white'/%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@200;300;400&display=swap" rel="stylesheet">
 
   <style>
     :root {
@@ -57,43 +57,107 @@
       height: 100%;
     }
 
-    /* ── Start screen ─────────────────────────────────────────── */
+    /* ── Start screen: same language as the case study ─────────── */
 
     #loading-overlay {
+      --ink: #050607;
+      --fg: #eceef1;
+      --muted: rgba(236, 238, 241, 0.64);
+      --faint: rgba(236, 238, 241, 0.38);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.24);
+      --teal: #3fafa0;
+      --coral: #e8734a;
+      --purple: #8e7cc3;
+      --amber: #f2a44e;
+      --serif-free: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
       position: fixed;
       inset: 0;
       z-index: 1000;
       overflow-y: auto;
-      background: #000;
-      display: flex;
-      justify-content: center;
-      padding: max(32px, env(safe-area-inset-top)) 16px 32px;
-    }
-
-    #loading-overlay .aurora {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
       background:
-        radial-gradient(60vmax 40vmax at 15% 10%, rgba(255, 69, 58, 0.28), transparent 60%),
-        radial-gradient(50vmax 40vmax at 90% 20%, rgba(255, 159, 10, 0.2), transparent 60%),
-        radial-gradient(60vmax 50vmax at 50% 110%, rgba(10, 132, 255, 0.25), transparent 60%);
-      filter: blur(20px);
-      animation: drift 18s ease-in-out infinite alternate;
+        radial-gradient(70vmax 50vmax at 85% 15%, rgba(232, 115, 74, 0.08), transparent 60%),
+        radial-gradient(60vmax 50vmax at 10% 100%, rgba(63, 175, 160, 0.07), transparent 60%),
+        var(--ink);
+      color: var(--fg);
+      font-family: var(--serif-free);
+      -webkit-font-smoothing: antialiased;
     }
 
-    @keyframes drift {
-      from { transform: translate3d(0, 0, 0) scale(1); }
-      to { transform: translate3d(0, -2%, 0) scale(1.06); }
+    #loading-overlay .grain {
+      position: fixed;
+      inset: -50%;
+      pointer-events: none;
+      opacity: 0.1;
+      mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      animation: grain 1.2s steps(4) infinite;
     }
+
+    @keyframes grain {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-3%, 2%); }
+      50% { transform: translate(2%, -3%); }
+      75% { transform: translate(-2%, -1%); }
+      100% { transform: translate(0, 0); }
+    }
+
+    /* Top bar: back to the case study, wordmark, portfolio */
+    .demo-nav {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: env(safe-area-inset-top) clamp(16px, 5vw, 72px) 0;
+      border-bottom: 1px solid var(--line);
+      background: rgba(5, 6, 7, 0.8);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+    }
+
+    .demo-nav .left { display: flex; align-items: center; gap: 22px; }
+
+    .demo-nav .wordmark {
+      padding: 0 18px;
+      border-left: 1px solid var(--line-strong);
+      border-right: 1px solid var(--line-strong);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      line-height: 34px;
+    }
+
+    #loading-overlay .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 2px;
+      font: 400 13.5px var(--serif-free);
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+
+    #loading-overlay .btn:hover { color: var(--fg); border-color: rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.06); }
+    #loading-overlay .btn:focus-visible, #loading-overlay a:focus-visible { outline: 1px solid var(--fg); outline-offset: 3px; }
 
     .sheet {
       position: relative;
-      width: 100%;
-      max-width: 880px;
-      margin: auto 0;
-      text-align: center;
-      animation: rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      gap: clamp(32px, 6vw, 96px);
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: clamp(40px, 9vh, 96px) clamp(16px, 5vw, 72px) 64px;
+      animation: rise 0.9s cubic-bezier(0.16, 0.84, 0.24, 1) both;
     }
 
     @keyframes rise {
@@ -101,171 +165,191 @@
       to { opacity: 1; transform: none; }
     }
 
-    .eyebrow {
-      display: inline-flex;
+    .intro { position: sticky; top: 120px; align-self: start; }
+
+    #loading-overlay .eyebrow {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      color: var(--secondary);
-      padding: 6px 14px 6px 10px;
-      border-radius: 999px;
-      background: var(--fill);
-      border: 1px solid var(--glass-border);
-      margin-bottom: 22px;
+      gap: 12px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 26px;
     }
 
-    .eyebrow .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--red);
-      box-shadow: 0 0 0 4px rgba(255, 69, 58, 0.25);
-      animation: pulse 1.6s ease-in-out infinite;
-    }
+    #loading-overlay .eyebrow .num { color: var(--fg); }
+    #loading-overlay .eyebrow::after { content: ""; width: 64px; height: 1px; background: var(--line-strong); }
 
-    @keyframes pulse {
-      50% { box-shadow: 0 0 0 7px rgba(255, 69, 58, 0); }
-    }
-
-    h1 {
-      font-size: clamp(2.4rem, 6.5vw, 4.2rem);
-      line-height: 1.04;
-      font-weight: 800;
+    #loading-overlay h1 {
+      font-size: clamp(2.6rem, 4.6vw, 4.3rem);
+      font-weight: 200;
+      line-height: 1.02;
       letter-spacing: -0.035em;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
-    h1 .grad {
-      background: linear-gradient(95deg, #ff6a5c 0%, #ff9f0a 45%, #ffd60a 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+    #loading-overlay h1 em { font-style: normal; color: var(--coral); }
 
     .lede {
-      font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-      line-height: 1.45;
-      color: var(--secondary);
-      max-width: 620px;
-      margin: 0 auto 30px;
-      font-weight: 500;
+      font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--muted);
+      max-width: 30rem;
+      margin-bottom: 36px;
     }
 
-    .card {
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      border-radius: 28px;
-      padding: 24px 26px;
-      text-align: left;
-      -webkit-backdrop-filter: saturate(180%) blur(30px);
-      backdrop-filter: saturate(180%) blur(30px);
-      box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    #start-button {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      height: 54px;
+      padding: 0 26px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 2px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.03));
+      color: var(--fg);
+      font: 400 16px var(--serif-free);
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, transform 0.25s;
     }
 
-    .scenario {
-      margin-bottom: 16px;
-    }
+    #start-button:hover { background: rgba(255, 255, 255, 0.18); border-color: var(--fg); }
+    #start-button:active { transform: scale(0.98); }
+    #start-button:focus-visible { outline: 1px solid var(--fg); outline-offset: 4px; }
 
-    .card h2 {
-      font-size: 13px;
-      font-weight: 700;
+    /* Three-by-three dot grid, as on the case study buttons */
+    .dots { width: 11px; height: 11px; background: radial-gradient(circle, currentColor 1.1px, transparent 1.4px) 0 0 / 4px 4px; }
+
+    .vr-note { margin-top: 16px; font-size: 13px; color: var(--faint); }
+
+    /* Right column: numbered blocks separated by thin lines */
+    .panel { border-top: 1px solid var(--line-strong); }
+
+    .block { padding: 26px 0 30px; border-bottom: 1px solid var(--line); }
+
+    .block h2 {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--tertiary);
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .block h2 .num { color: var(--fg); }
+
+    .block .meta { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); margin-bottom: 12px; }
+
+    .brief { font-size: 17px; font-weight: 300; line-height: 1.55; color: var(--muted); }
+    .brief strong { font-weight: 400; color: var(--fg); }
+
+    .steps { list-style: none; display: grid; gap: 0; margin-top: 18px; border-top: 1px solid var(--line); }
+
+    .steps li {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      align-items: baseline;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .steps .n { font-size: 12px; letter-spacing: 0.16em; color: var(--c); }
+    .steps b { display: block; font-weight: 400; font-size: 15.5px; }
+    .steps small { display: block; font-size: 13px; color: var(--faint); margin-top: 2px; }
+
+    .segmented {
+      display: inline-grid;
+      grid-auto-flow: column;
+      border: 1px solid var(--line-strong);
+      border-radius: 2px;
       margin-bottom: 14px;
     }
 
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
+    .segmented label {
+      position: relative;
+      padding: 9px 18px;
+      font-size: 13.5px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
     }
 
-    .chip {
-      font-size: 13px;
-      font-weight: 600;
-      padding: 5px 12px;
-      border-radius: 999px;
-      background: var(--fill);
-      color: var(--label);
-    }
+    .segmented label + label { border-left: 1px solid var(--line-strong); }
+    .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+    .segmented label:has(input:checked) { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
+    .segmented label:has(input:focus-visible) { outline: 1px solid var(--fg); outline-offset: 2px; }
 
-    .chip.green { background: rgba(48, 209, 88, 0.16); color: var(--green); }
-    .chip.blue { background: rgba(10, 132, 255, 0.18); color: #64b5ff; }
+    .setup .hint { font-size: 14px; color: var(--faint); line-height: 1.5; }
 
-    .scenario p {
-      font-size: 17px;
-      line-height: 1.55;
-      color: var(--secondary);
-    }
+    .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+    .roles[hidden] { display: none; }
 
-    .scenario p strong {
-      color: var(--label);
-      font-weight: 600;
-    }
-
-    .chain {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 18px;
-      list-style: none;
-    }
-
-    .chain li {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(118, 118, 128, 0.14);
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .chain li small {
+    .role {
+      position: relative;
       display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--tertiary);
-      margin-top: 2px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
     }
 
-    .chain .badge {
-      flex: none;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 15px;
-      font-weight: 800;
-      color: #fff;
-    }
+    .role:hover { border-color: var(--line-strong); }
+    .role input { position: absolute; opacity: 0; pointer-events: none; }
+    .role:has(input:checked) { border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
+    .role:has(input:focus-visible) { outline: 1px solid var(--fg); outline-offset: 2px; }
+    .role strong { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 400; }
+    .role strong::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); box-shadow: 0 0 10px var(--c); }
+    .role small { display: block; margin-top: 6px; font-size: 12.5px; color: var(--faint); line-height: 1.4; }
 
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .controls ul {
-      list-style: none;
-      display: grid;
-      gap: 12px;
-    }
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .controls h3 { font-size: 11px; font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
+    .controls ul { list-style: none; display: grid; }
 
     .controls li {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      font-size: 15px;
-      color: var(--secondary);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .keys { display: inline-flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+
+    #loading-overlay kbd {
+      min-width: 24px;
+      height: 24px;
+      padding: 0 7px;
+      border-radius: 2px;
+      background: transparent;
+      border: 1px solid var(--line-strong);
+      box-shadow: none;
+      font: 400 12px var(--serif-free);
+      color: var(--fg);
+    }
+
+    @media (max-width: 900px) {
+      .sheet { grid-template-columns: minmax(0, 1fr); padding-top: 40px; }
+      .intro { position: static; }
+    }
+
+    @media (max-width: 640px) {
+      .demo-nav .wordmark { display: none; }
+      .roles, .controls { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sheet, #loading-overlay .grain { animation: none; }
     }
 
     kbd {
@@ -283,58 +367,6 @@
       font-size: 13px;
       font-weight: 600;
       color: var(--label);
-    }
-
-    .keys {
-      display: inline-flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    #start-button {
-      appearance: none;
-      border: none;
-      cursor: pointer;
-      font-family: var(--font);
-      font-size: 17px;
-      font-weight: 600;
-      color: #fff;
-      background: var(--blue);
-      padding: 16px 40px;
-      border-radius: 999px;
-      box-shadow: 0 10px 30px -8px rgba(10, 132, 255, 0.7);
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s, background 0.2s;
-    }
-
-    #start-button:hover {
-      background: #339cff;
-      transform: scale(1.03);
-      box-shadow: 0 14px 40px -8px rgba(10, 132, 255, 0.85);
-    }
-
-    #start-button:active {
-      transform: scale(0.98);
-    }
-
-    #start-button:focus-visible {
-      outline: 3px solid rgba(10, 132, 255, 0.5);
-      outline-offset: 4px;
-    }
-
-    .vr-note {
-      margin-top: 18px;
-      font-size: 13px;
-      color: var(--tertiary);
-    }
-
-    @media (max-width: 640px) {
-      .chain, .controls { grid-template-columns: 1fr; }
-      .card { padding: 22px; border-radius: 24px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .aurora, .sheet, .eyebrow .dot { animation: none; }
     }
 
     /* ── In-session chrome ────────────────────────────────────── */
@@ -398,68 +430,6 @@
 
     @media (max-width: 640px) {
       #desktop-controls-hint { display: none; }
-    }
-
-    /* ── Start screen: mode + role pickers ─────────────────────── */
-
-    .setup { margin-bottom: 16px; }
-
-    .segmented {
-      display: inline-grid;
-      grid-auto-flow: column;
-      gap: 4px;
-      padding: 4px;
-      border-radius: 14px;
-      background: var(--fill);
-      margin-bottom: 14px;
-    }
-
-    .segmented label {
-      position: relative;
-      padding: 8px 18px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--secondary);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .segmented input { position: absolute; opacity: 0; pointer-events: none; }
-    .segmented label:has(input:checked) { background: rgba(255, 255, 255, 0.16); color: var(--label); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    .segmented label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
-
-    .setup .hint { font-size: 14px; color: var(--tertiary); line-height: 1.5; }
-
-    .roles {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .roles[hidden] { display: none; }
-
-    .role {
-      position: relative;
-      display: block;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(118, 118, 128, 0.14);
-      border: 1.5px solid transparent;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-
-    .role input { position: absolute; opacity: 0; pointer-events: none; }
-    .role:has(input:checked) { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
-    .role:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
-    .role strong { display: flex; align-items: center; gap: 8px; font-size: 15px; }
-    .role strong::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
-    .role small { display: block; margin-top: 4px; font-size: 12px; color: var(--tertiary); line-height: 1.4; }
-
-    @media (max-width: 640px) {
-      .roles { grid-template-columns: 1fr; }
     }
 
     /* ── In-session toolbar, roster, exit sheet ─────────────────── */
@@ -649,71 +619,74 @@
 
   <!-- Loading / Start Screen -->
   <div id="loading-overlay">
-    <div class="aurora" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="demo-nav">
+      <div class="left">
+        <a class="btn" href="/">← Case study</a>
+        <span class="wordmark">VR FIRST AID</span>
+      </div>
+      <a class="btn" href="https://uxabhi.com">Portfolio ↗</a>
+    </header>
 
     <main class="sheet">
-      <span class="eyebrow"><span class="dot"></span>WebXR Training Simulation</span>
-
-      <h1>First aid,<br><span class="grad">when it matters.</span></h1>
-      <p class="lede">Learn the Chain of Rescue at a real-world road accident, on your desktop or in a VR headset.</p>
-
-      <section class="card scenario" aria-labelledby="brief-title">
-        <h2 id="brief-title">Scenario briefing</h2>
-        <div class="chips">
-          <span class="chip green">Easy</span>
-          <span class="chip blue">Solo or team</span>
-          <span class="chip">Urban road · Daylight</span>
-        </div>
-        <p>
-          A <strong>minor rear-end collision</strong> has happened on an urban road in broad daylight.
-          One person appears dazed but conscious. Follow the <strong>Chain of Rescue</strong>:
-          secure the scene, call 112, and approach the victim safely.
-        </p>
-        <ol class="chain">
-          <li><span class="badge" style="background: var(--orange)">1</span><span>Secure the scene<small>Vest and warning triangle</small></span></li>
-          <li><span class="badge" style="background: var(--green)">2</span><span>Call 112<small>Answer the five W-questions</small></span></li>
-          <li><span class="badge" style="background: var(--blue)">3</span><span>Reach the patient<small>Approach once it is safe</small></span></li>
-        </ol>
+      <section class="intro">
+        <p class="eyebrow"><span class="num">Prototype</span><span>WebXR training</span></p>
+        <h1>First aid,<br><em>when it matters.</em></h1>
+        <p class="lede">Practise the rescue chain at a road accident, on your desktop or in a VR headset. This is the easy tier of the concept from the case study.</p>
+        <button id="start-button">Begin training <span class="dots" aria-hidden="true"></span></button>
+        <p class="vr-note">Using a headset? Choose “Enter VR” after starting.</p>
       </section>
 
-      <section class="card setup" aria-labelledby="mode-title">
-        <h2 id="mode-title">How do you want to train?</h2>
-        <div class="segmented" role="radiogroup" aria-label="Mode">
-          <label><input type="radio" name="mode" value="solo" checked>Solo</label>
-          <label><input type="radio" name="mode" value="team">Team with AI</label>
-        </div>
-        <p class="hint" id="mode-hint">You handle every step of the rescue yourself.</p>
-        <div class="roles" id="role-picker" role="radiogroup" aria-label="Your role" hidden>
-          <label class="role" style="--c: var(--orange)"><input type="radio" name="role" value="scene" checked><strong>Scene</strong><small>Vest and warning triangle. Sees traffic hazards.</small></label>
-          <label class="role" style="--c: var(--blue)"><input type="radio" name="role" value="people"><strong>Lead</strong><small>Leads the team and makes the 112 call.</small></label>
-          <label class="role" style="--c: var(--green)"><input type="radio" name="role" value="medical"><strong>Medical</strong><small>Checks the patient once safe. Sees vitals.</small></label>
-        </div>
-      </section>
-
-      <div class="controls">
-        <section class="card" aria-labelledby="desk-title">
-          <h2 id="desk-title">Desktop</h2>
-          <ul>
-            <li>Move <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></li>
-            <li>Look around <span class="keys"><kbd>Right-drag</kbd><kbd>Q</kbd><kbd>E</kbd></span></li>
-            <li>Interact / walk to <span class="keys"><kbd>Left-click</kbd></span></li>
-            <li>Immersive / top view <span class="keys"><kbd>V</kbd></span></li>
-          </ul>
+      <div class="panel">
+        <section class="block" aria-labelledby="brief-title">
+          <h2 id="brief-title"><span class="num">01</span>Scenario</h2>
+          <p class="meta">Easy · Solo or team · Urban road, daylight</p>
+          <p class="brief">A <strong>minor rear-end collision</strong> on an urban road. One person appears dazed but conscious. Work through the rescue chain in order.</p>
+          <ol class="steps">
+            <li style="--c: var(--teal)"><span class="n">01</span><span><b>Secure the scene</b><small>Vest and warning triangle</small></span></li>
+            <li style="--c: var(--purple)"><span class="n">02</span><span><b>Call 112</b><small>Answer the five W-questions</small></span></li>
+            <li style="--c: var(--coral)"><span class="n">03</span><span><b>Reach the patient</b><small>Approach once it is safe</small></span></li>
+          </ol>
         </section>
-        <section class="card" aria-labelledby="vr-title">
-          <h2 id="vr-title">VR headset</h2>
-          <ul>
-            <li>Select / teleport <span class="keys"><kbd>Trigger</kbd></span></li>
-            <li>Grab objects <span class="keys"><kbd>Grip</kbd></span></li>
-            <li>Turn <span class="keys"><kbd>Thumbstick ◀ ▶</kbd></span></li>
-            <li>Switch role / exit <span class="keys"><kbd>HUD buttons</kbd></span></li>
-          </ul>
+
+        <section class="block setup" aria-labelledby="mode-title">
+          <h2 id="mode-title"><span class="num">02</span>How do you want to train?</h2>
+          <div class="segmented" role="radiogroup" aria-label="Mode">
+            <label><input type="radio" name="mode" value="solo" checked>Solo</label>
+            <label><input type="radio" name="mode" value="team">Team with AI</label>
+          </div>
+          <p class="hint" id="mode-hint">You handle every step of the rescue yourself.</p>
+          <div class="roles" id="role-picker" role="radiogroup" aria-label="Your role" hidden>
+            <label class="role" style="--c: var(--orange)"><input type="radio" name="role" value="scene" checked><strong>Scene</strong><small>Vest and warning triangle. Sees traffic hazards.</small></label>
+            <label class="role" style="--c: var(--blue)"><input type="radio" name="role" value="people"><strong>Lead</strong><small>Leads the team and makes the 112 call.</small></label>
+            <label class="role" style="--c: var(--green)"><input type="radio" name="role" value="medical"><strong>Medical</strong><small>Checks the patient once safe. Sees vitals.</small></label>
+          </div>
+        </section>
+
+        <section class="block" aria-labelledby="controls-title">
+          <h2 id="controls-title"><span class="num">03</span>Controls</h2>
+          <div class="controls">
+            <div>
+              <h3>Desktop</h3>
+              <ul>
+                <li>Move <span class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></li>
+                <li>Look around <span class="keys"><kbd>Right-drag</kbd><kbd>Q</kbd><kbd>E</kbd></span></li>
+                <li>Interact / walk to <span class="keys"><kbd>Left-click</kbd></span></li>
+                <li>Immersive / top view <span class="keys"><kbd>V</kbd></span></li>
+              </ul>
+            </div>
+            <div>
+              <h3>VR headset</h3>
+              <ul>
+                <li>Select / teleport <span class="keys"><kbd>Trigger</kbd></span></li>
+                <li>Grab objects <span class="keys"><kbd>Grip</kbd></span></li>
+                <li>Turn <span class="keys"><kbd>Thumbstick ◀ ▶</kbd></span></li>
+                <li>Switch role / exit <span class="keys"><kbd>HUD buttons</kbd></span></li>
+              </ul>
+            </div>
+          </div>
         </section>
       </div>
-
-      <button id="start-button">Begin Training</button>
-      <p class="vr-note">Using a headset? Choose “Enter VR” after starting.</p>
-      <p class="vr-note"><a href="/" style="color: var(--secondary)">Read the case study behind this prototype →</a></p>
     </main>
   </div>
 
