@@ -18,7 +18,12 @@
   "redirects": [
     {
       "source": "/case-study/paper(/.*)?",
-      "destination": "/paper/",
+      "destination": "/findings/",
+      "permanent": false
+    },
+    {
+      "source": "/paper(/.*)?",
+      "destination": "/findings/",
       "permanent": false
     },
     {

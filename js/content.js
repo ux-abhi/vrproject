@@ -6,8 +6,8 @@
 
 export const LINKS = {
   demo: '/demo/',
-  paper: '/paper/',
-  paperPdf: '',      // e.g. '/paper/who-does-what.pdf' once the PDF is added
+  paper: '/findings/',
+  paperPdf: '',      // e.g. '/findings/who-does-what.pdf' once the PDF is added
   video: '',
   portfolio: 'https://uxabhi.com',
 };
@@ -144,7 +144,7 @@ export const MILESTONES = [
   { label: 'Literature gap', detail: 'Existing VR first aid trains individuals; the collaborative, lay cell is empty.', done: true },
   { label: 'Interviews', detail: 'Seven experts, semi-structured, 30–60 minutes each.', done: true },
   { label: 'Analysis', detail: 'Grounded Theory coding until saturation across all seven transcripts.', done: true },
-  { label: 'Concept + paper', detail: 'Three collaboration mechanics, three tiers, hypotheses H1–H3.', done: true },
+  { label: 'Concept + findings', detail: 'Three collaboration mechanics, three tiers, hypotheses H1–H3.', done: true },
   { label: 'WebXR', detail: 'A working browser prototype: desktop and headset, solo and AI team mode.', done: true },
   { label: 'User study', detail: 'Testing H1–H3 against baselines. Not yet run.', done: false },
   { label: 'Retention', detail: 'Longitudinal study past the 2–6 month decay window. Not yet run.', done: false },

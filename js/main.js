@@ -24,7 +24,7 @@ function wireLinks() {
       a.removeAttribute('href');
       a.setAttribute('aria-disabled', 'true');
       a.setAttribute('role', 'link');
-      if (a.dataset.link === 'paper') a.textContent = 'Research paper · coming soon';
+      if (a.dataset.link === 'paper') a.textContent = 'Research findings · coming soon';
       if (a.dataset.link === 'paperPdf') a.remove();
     }
   }
